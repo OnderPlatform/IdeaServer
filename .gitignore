@@ -1,0 +1,12 @@
+**/*.d.ts
+bin/*.js
+/app.js
+**/*.js.map
+
+.vscode
+.idea/
+
+dist/
+node_modules/
+
+package-lock.json

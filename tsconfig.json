@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "commonjs",
+    "lib": ["es2017", "dom"],
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "declaration": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "removeComments": false,
+    "emitDecoratorMetadata": true,
+    "declarationMap": true,
+    "sourceRoot": "src/",
+    "outDir": "dist/"
+  },
+
+}
