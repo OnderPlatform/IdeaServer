@@ -5,7 +5,8 @@
   "license": "AGPL-3.0",
   "scripts": {
     "build": "rm -rf ./dist/ && tsc --project tsconfig.json",
-    "lint": "tslint --format stylish --project . --exclude './node_modules/**/*.ts'"
+    "lint": "tslint --format stylish --project . --exclude './node_modules/**/*.ts'",
+    "start": "node ./dist/bin/main.js"
   },
   "dependencies": {
     "@types/koa": "^2.0.47",

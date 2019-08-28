@@ -1,5 +1,4 @@
 import NodeDatabase from './NodeDatabase'
-import {LoggerManager} from 'typescript-logger'
 
 export class NodeDatabaseService {
   private readonly db: NodeDatabase
@@ -7,5 +6,4 @@ export class NodeDatabaseService {
   constructor (db: NodeDatabase) {
     this.db = db
   }
-
 }
