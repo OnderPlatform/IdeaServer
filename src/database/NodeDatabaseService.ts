@@ -725,5 +725,73 @@ export class NodeDatabaseService {
         }
       }
     }
+
+    // 6. Creating transactions for operator
+    await Promise.all(data.consumers.map(async value => {
+      const consumer = await this.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: value.consumerId
+        }
+      })
+      const consumerTrade = await this.tradeRepository.findOneOrFail({
+        where: {
+          cell: consumer
+        },
+        order: {
+          time: "DESC"
+        }
+      })
+      if (typeof consumerTrade.pay !== "number")
+        throw new Error('pay is null')
+      if (!operator.opCoef)
+        throw new Error('opCoef is null')
+
+      const cost = consumerTrade.pay*(operator.opCoef/100)
+      const price = consumerTrade.price
+      await this.transactionRepository.insert({
+        cost: cost,
+        time: new Date(Date.now()).toISOString(),
+        from: consumer,
+        to: operator,
+        price: price,
+        amount: cost/price,
+        approved: false
+      })
+    }))
+    await Promise.all(data.prosumers.map(async value => {
+      const prosumer = await this.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: value.prosumerId
+        }
+      })
+      const prosumerTrade = await this.tradeRepository.findOneOrFail({
+        where: {
+          cell: prosumer
+        },
+        order: {
+          time: "DESC"
+        }
+      })
+      if (typeof prosumerTrade.pip !== 'boolean')
+        throw new Error('pip is not boolean')
+      if (!prosumerTrade.pip) {
+        if (!operator.opCoef)
+          throw new Error('opCoef is null')
+        if (!prosumerTrade.pay)
+          throw new Error('pay is null')
+
+        const cost = prosumerTrade.pay*operator.opCoef/100
+        const price = prosumerTrade.price
+        await this.transactionRepository.insert({
+          cost: cost,
+          time: new Date(Date.now()).toISOString(),
+          price: price,
+          amount: cost/price,
+          from: prosumer,
+          to: operator,
+          approved: false
+        })
+      }
+    }))
   }
 }
