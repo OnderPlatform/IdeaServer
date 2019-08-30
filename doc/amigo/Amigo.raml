@@ -1,0 +1,342 @@
+#%RAML 1.0
+title: AMIGO Rest API
+version: v1.02
+mediaType: application/json
+types: !include AmigoTypes.raml
+
+/values:
+#Данный вход позволяет добавить значение в репозиторий и отправить событие менеджеру (например, чтобы были запущены
+# модули, работающие с этим значением)
+    post:
+        body:
+            application/json:
+                type: ValueToRepo
+#                example: {"path":"/m:mainDataModel/m:generatingUnit[@m:name=&quot;SolarPanel&quot;]/m:p","purposeKey":"TMMM","value":"3.14","event":"BBUH"}
+        responses:
+            200:
+                body: Message
+/commands:
+#отправка команды (события) системе. Событие должно быть описано в конфигурации системы
+    post:
+        body:
+            application/json:
+                type: EmEvent
+#                example: {"event":"EVNT"}
+        responses:
+            200:
+                body: Message
+/moduleCommands:
+    post:
+        body:
+            application/json:
+                type: EmMessage
+#               example: {"moduleType": "IRST", "instanceNumber": 0, "operation": "WREQ", "action": "start"}
+        responses:
+            200:
+                body: Message
+/moduleEvents:
+    post:
+        body:
+            application/json:
+                type: EmMessage
+#               example: {"moduleType": "IRST", "instanceNumber": 0, "operation": "WREQ", "action": "start"}
+        responses:
+            200:
+                body: Message
+/diagnostics:
+    get:
+        responses:
+            200:
+                body: AmigoStateSnapshot
+    /logs:
+        get:
+            responses:
+                200:
+                    body: file
+    /installation:
+        get:
+            responses:
+                200:
+                    body: AmigoInstallationInfo
+    /update:
+        post:
+            body:
+                multipart/form-data:
+                    properties:
+                        file:
+                            type: file
+                            required: true
+                        updatePlan:
+                            type: AmigoModificationPlan
+                            required: true
+            responses:
+                200:
+                    body: Message
+    /journal: !include Journal.raml
+    /dbStats:
+        get:
+            responses:
+                200:
+                    body: RepoStatistics
+/time:
+    get:
+        responses:
+            200:
+                body: datetime
+
+/generatingUnit:
+    uriParameters:
+        energySource:
+            description: "Тип источника энергии"
+            type: string
+            required: false
+    get:
+        responses:
+            200:
+                body: IOList
+    /p: !include TelPoint.raml
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: GeneratingUnit
+        /inService: !include TelPoint.raml
+        /sysControlEnabled: !include TelPoint.raml
+        /operMode: !include TelPoint.raml
+        /p: !include TelPoint.raml
+        /q: !include TelPoint.raml
+        /workingTime: !include TelPoint.raml
+        /phaseA: !include Phase.raml
+        /phaseB: !include Phase.raml
+        /phaseC: !include Phase.raml
+/energyConsumer:
+    get:
+        responses:
+            200:
+                body: IOList
+    /inService: !include TelPoint.raml
+    /p: !include TelPoint.raml
+    /e: !include EnergyTelPoint.raml
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: EnergyConsumer
+        /inService: !include TelPoint.raml
+        /sysControlEnabled: !include TelPoint.raml
+        /operMode: !include TelPoint.raml
+        /p: !include TelPoint.raml
+        /q: !include TelPoint.raml
+        /e: !include TelPoint.raml
+        /phaseA: !include Phase.raml
+        /phaseB: !include Phase.raml
+        /phaseC: !include Phase.raml
+        /groups:
+            get:
+                responses:
+                    200:
+                        body: string[]
+/energyStoragingUnit:
+    get:
+        responses:
+            200:
+                body: IOList
+    /p: !include TelPoint.raml
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: EnergyStoragingUnit
+        /inService: !include TelPoint.raml
+        /sysControlEnabled: !include TelPoint.raml
+        /operMode: !include TelPoint.raml
+        /p: !include TelPoint.raml
+        /q: !include TelPoint.raml
+        /e: !include TelPoint.raml
+        /status: !include TelPoint.raml
+        /batteryVoltage: !include TelPoint.raml
+        /chargeNumber: !include TelPoint.raml
+        /phaseA: !include Phase.raml
+        /phaseB: !include Phase.raml
+        /phaseC: !include Phase.raml
+/externalGrid:
+    get:
+        responses:
+            200:
+                body: IOList
+    /p: !include TelPoint.raml
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: ExternalGrid
+        /inService: !include TelPoint.raml
+        /operMode: !include TelPoint.raml
+        /p: !include TelPoint.raml
+        /q: !include TelPoint.raml
+        /e: !include TelPoint.raml
+        /priceIN: !include TelPoint.raml
+        /priceOUT: !include TelPoint.raml
+        /cost: !include TelPoint.raml
+        /currentPriceCategory: !include TelPoint.raml
+        /savings: !include Savings.raml
+        /phaseA: !include Phase.raml
+        /phaseB: !include Phase.raml
+        /phaseC: !include Phase.raml
+        /energyProvider:
+            get:
+                responses:
+                    200:
+                        body: Message
+/weatherStation:
+    get:
+        responses:
+            200:
+                body: IOList
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: WeatherStation
+        /insolation: !include TelPoint.raml
+        /temperature: !include TelPoint.raml
+/bus:
+    get:
+        responses:
+            200:
+                body: IOList
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: Bus
+        /p: !include TelPoint.raml
+        /q: !include TelPoint.raml
+        /u: !include TelPoint.raml
+        /f: !include TelPoint.raml
+        /uMin: !include TelPoint.raml
+        /uMax: !include TelPoint.raml
+        /phaseA: !include Phase.raml
+        /phaseB: !include Phase.raml
+        /phaseC: !include Phase.raml
+/branch:
+    get:
+        responses:
+            200:
+                body: IOList
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: Bus
+        /p: !include TelPoint.raml
+        /q: !include TelPoint.raml
+        /i: !include TelPoint.raml
+        /pMax: !include TelPoint.raml
+        /iMax: !include TelPoint.raml
+        /operMode: !include TelPoint.raml
+/energyConsumerGroup:
+    get:
+        responses:
+            200:
+                body: IOList
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: EnergyConsumerGroup
+        /members:
+            get:
+                responses:
+                    200:
+                        body: IOList
+        /p: !include TelPoint.raml
+        /e: !include EnergyTelPoint.raml
+/energyProvider:
+    get:
+        responses:
+            200:
+                body: IOList
+    /{mrid}:
+        get:
+            responses:
+                200:
+                    body: EnergyProvider
+        /currentVoltageLevel: !include TelPoint.raml
+
+        /tariffs: !include Tariffs.raml
+        /costs: !include TelPoint.raml
+/cimObject:
+    get:
+        responses:
+            200:
+                body: IOList
+/savings: !include Savings.raml
+/exec:
+    post:
+        body:
+            application/json:
+                type: RuntimeCommand
+        responses:
+            200:
+                body: Message
+#/akomPlans:
+#    get:
+#        responses:
+#            200:
+#                body: IOList
+#    /{mrid}: !include AKOMPlans.raml
+#
+#
+#/chargeHall:
+#    get:
+#        responses:
+#            200:
+#                body: IOList
+##    /{mrid}: !include ChargeHall.raml
+#    /{mrid}:
+#        get:
+#            responses:
+#                200:
+#                    body: ChargeHall
+#        /inService: !include TelPoint.raml
+#        /sysControlEnabled: !include TelPoint.raml
+#        /usrControlEnabled: !include TelPoint.raml
+#        /chargeTable:
+#            get:
+#                responses:
+#                    200:
+#                        body: IOList
+#            /{mrid1}:
+#                get:
+#                    responses:
+#                        200:
+#                            body: ChargeTable
+#                /inService: !include TelPoint.raml
+#                /sysControlEnabled: !include TelPoint.raml
+#                /usrControlEnabled: !include TelPoint.raml
+#                /operMode: !include TelPoint.raml
+#                /p: !include TelPoint.raml
+#                /q: !include TelPoint.raml
+#                /e: !include TelPoint.raml
+#                /chargeBlock:
+#                    get:
+#                        responses:
+#                            200:
+#                                body: IOList
+#        #            /{mrid2}: !include ChargeBlock.raml
+#                    /{mrid2}:
+#                        get:
+#                            responses:
+#                                200:
+#                                    body: ChargeBlock
+#                        /inService: !include TelPoint.raml
+#                        /sysControlEnabled: !include TelPoint.raml
+#                        /usrControlEnabled: !include TelPoint.raml
+#                        /operMode: !include TelPoint.raml
+#                        /p: !include TelPoint.raml
+#                        /q: !include TelPoint.raml
+#                        /e: !include TelPoint.raml
+#
+#/messageQueue:
+#    /{mrid}: !include MessageQueue.raml

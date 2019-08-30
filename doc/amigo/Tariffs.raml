@@ -1,0 +1,26 @@
+uriParameters:
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+        tariff:
+            description: "ставка тарифа(обозначение)"
+            type: string
+            required: false
+        catid:
+            description: "ценовая категория"
+            type: string
+            required: false
+        taskMode:
+            description: "режим расчета"
+            type: string
+            required: false
+get:
+    responses:
+        200:
+            body: TariffRateList
+

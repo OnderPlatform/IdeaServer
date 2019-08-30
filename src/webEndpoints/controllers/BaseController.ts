@@ -2,7 +2,7 @@ import * as Router from 'koa-router'
 
 export class BaseController {
 
-  public router(): Router {
+  public router (): Router {
     const router = new Router()
     const namespace = `/api`
 
@@ -11,7 +11,7 @@ export class BaseController {
 
     // example: remove after implementation
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-      this.setCorsHeaders(ctx);
+      this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
     })
 

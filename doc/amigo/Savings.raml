@@ -1,0 +1,53 @@
+    /{smrid}:
+        uriParameters:
+                start:
+                    description: "начало запрашиваемого периода"
+                    type: datetime
+                    required: false
+                end:
+                    description: "конец запрашиваемого периода"
+                    type: datetime
+                    required: false
+                catid:
+                    description: "ценовая категория. Принимает значения PC1, PC3, PC4"
+                    type: string
+                    required: false
+                taskMode:
+                    description: "Режим расчета. Принимает значения PLAN, FACT"
+                    type: string
+                    required: false
+        get:
+            responses:
+                 200:
+                    body: SavingsList
+        /benefits:
+            uriParameters:
+                    start:
+                        description: "начало запрашиваемого периода"
+                        type: datetime
+                        required: false
+                    end:
+                        description: "конец запрашиваемого периода"
+                        type: datetime
+                        required: false
+                    catid:
+                        description: "ценовая категория"
+                        type: string
+                        required: false
+                    taskMode:
+                        description: "режим расчета"
+                        type: string
+                        required: false
+                    interval:
+                        description: "интервал агрегации(month)"
+                        type: string
+                        required: false
+                    mode:
+                        description: "способ агрегации в интервале(sum)"
+                        type: string
+                        required: false
+            get:
+                responses:
+                     200:
+                        body: BenefitSummary
+

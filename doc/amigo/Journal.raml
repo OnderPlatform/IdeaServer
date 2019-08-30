@@ -1,0 +1,48 @@
+get:
+    responses:
+        200:
+            body: EventRecordToResponseList
+/{resourceId}:
+    get:
+        responses:
+            200:
+                body: EventRecordToResponseList
+    /interval:
+        uriParameters:
+            start:
+                description: "начало запрашиваемого периода"
+                type: datetime
+                required: false
+            end:
+                description: "конец запрашиваемого периода"
+                type: datetime
+                required: false
+        get:
+            responses:
+                200:
+                    body: EventRecordToResponseList
+    /module:
+        uriParameters:
+            name:
+                description: "имя запрашиваемого модуля"
+                type: string
+                required: true
+        get:
+            responses:
+                200:
+                    body: EventRecordToResponseList
+    /task:
+        uriParameters:
+            name:
+                description: "имя запрашиваемой задачи"
+                type: string
+                required: true
+        get:
+            responses:
+                200:
+                    body: EventRecordToResponseList
+    /info:
+        get:
+            responses:
+                200:
+                    body: EventRecordToResponseList
