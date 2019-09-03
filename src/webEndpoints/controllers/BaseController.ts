@@ -10,6 +10,7 @@ export class BaseController {
     const router = new Router()
     const namespace = `/api`
     let mqtt_cl = require('../../mqtt/Mqtt_client')
+    let excel = require('../../excel/xlsx')
 
     /* configure endpoints
     */
@@ -21,6 +22,7 @@ export class BaseController {
     mqtt.start()
       this.setCorsHeaders(ctx);
       ctx.response.body = 'Hello!'
+      excel.parse()
     })
 
     return router
