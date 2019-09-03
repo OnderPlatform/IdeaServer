@@ -16,7 +16,7 @@ export default class Application {
           "port": 5432,
           "username": "postgres",
           "password": "postgres",
-          "database": "ideaServer",
+          "database": "ideaserver",
           "synchronize": true,
           "logging": false,
           "entities": [
