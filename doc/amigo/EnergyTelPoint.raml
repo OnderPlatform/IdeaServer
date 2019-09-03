@@ -1,0 +1,72 @@
+#точка измерения для энергии.
+#Повторяет агрегированную точку, но для получения значения требует начало и конец периода,
+#за который вычисляется потребление или выработка энергии.
+uriParameters:
+    start:
+        description: "начало запрашиваемого периода"
+        type: datetime
+        required: true
+    end:
+        description: "конец запрашиваемого периода"
+        type: datetime
+        required: true
+    purposeKey:
+        type: string
+        default: TM1H
+        description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+get:
+    responses:
+        200:
+            body: MeasurementValue
+#                            example: {"timeStamp":"2017-01-27T09:31:14.889+03:00[Europe/Moscow]",
+#                                "measurementValueQuality":{"validity":"GOOD","source":"PROCESS"},
+#                                "value":3.141592653589793}
+#/info: !include info.raml
+#/max:
+#    uriParameters:
+#        start:
+#            description: "начало запрашиваемого периода"
+#            type: datetime
+#            required: true
+#        end:
+#            description: "конец запрашиваемого периода"
+#            type: datetime
+#            required: true
+#        purposeKey:
+#            type: string
+#            default: TM1H
+#            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+#    get:
+#        responses:
+#            200:
+#                body: MeasurementValue
+#    /info: !include info.raml
+/row:
+    uriParameters:
+        start:
+            description: "начало запрашиваемого периода"
+            type: datetime
+            required: true
+        end:
+            description: "конец запрашиваемого периода"
+            type: datetime
+            required: true
+        aggregate:
+            description: "период агрегации: день, месяц, год"
+            type: string
+            default: day
+        purposeKey:
+            type: string
+            default: TM1H
+            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+    get:
+        responses:
+            200:
+                body: MVList
+    post:
+        body:
+            application/json:
+                type: MVList
+#                            example: [{"timeStamp":"2017-01-27T09:31:14.889+03:00[Europe/Moscow]",
+#                                "measurementValueQuality":{"validity":"GOOD","source":"PROCESS"},
+#                                "value":3.141592653589793}]
