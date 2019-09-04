@@ -1,0 +1,15 @@
+FROM node:lts
+
+WORKDIR /opt
+
+COPY . .
+
+ARG OFFLINE_CACHE="/opt/yarn-offline-cache"
+
+RUN yarn config set yarn-offline-mirror ${OFFLINE_CACHE} && \
+    yarn config set yarn-offline-mirror-pruning true
+
+RUN yarn install&&\
+    yarn build
+
+CMD [ "/usr/local/bin/node","dist/bin/main.js" ]

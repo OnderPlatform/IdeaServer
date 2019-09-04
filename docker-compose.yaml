@@ -1,0 +1,22 @@
+version: '3.7'
+
+volumes:
+  postgres:
+    driver: local
+
+services:
+  postgres:
+    image: 'postgres:11'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/1-init.sql
+    ports:
+      - 5432:5432
+  web:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - 127.0.0.1:8080:8888
+    depends_on:
+      - postgres
