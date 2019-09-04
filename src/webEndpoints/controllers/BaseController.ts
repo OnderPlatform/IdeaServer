@@ -12,11 +12,42 @@ export class BaseController {
     let mqtt_cl = require('../../mqtt/Mqtt_client')
     let excel = require('../../excel/xlsx')
 
+
+
+    var workerpool  = require('workerpool');
+
+// create a worker pool using an the asyncWorker. This worker contains
+// asynchronous functions.
+var pool = workerpool.pool('./src/workers/asyncWorker.js');
+
+
     /* configure endpoints
     */
 
     // example: remove after implementation
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
+
+
+
+
+
+
+  pool.proxy()
+      .then((worker: any) => {
+        return worker.asyncAdd(3, 4.1);
+      })
+      .then((result: any) => {
+        console.log(result);
+      })
+      .catch((err: any) => {
+        console.error(err);
+      })
+      .then(() => {
+        pool.terminate(); // terminate all workers when done
+      });
+
+
+
     const mqtt = new mqtt_cl.ClientMQTT()
     mqtt.add_handler(this.handler)
     mqtt.start()

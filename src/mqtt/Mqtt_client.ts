@@ -31,7 +31,7 @@ private started: number
   }
 
   topic_handler (topic: string, message: string): void {
-    console.log('Received a new message from %o', topic.toString())
+    console.log('Received a new message from %o %o', topic.toString(), message.toString())
     this.handler(topic, message)
   }
 
