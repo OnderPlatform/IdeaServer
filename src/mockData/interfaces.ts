@@ -37,12 +37,12 @@ export interface DataFromUI {
 
 // Interfaces related to algorithm
 export interface TransactionEntry {
-  time: Date,
-  from: string,
-  to: string,
+  cost: number,
+  time: string,
   price: number,
   amount: number,
-  cost: number,
+  from: string,
+  to: string,
   approved: boolean
 }
 

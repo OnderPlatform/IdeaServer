@@ -7,6 +7,7 @@ import { UserRepository } from "./repositories/UserRepository";
 import { initialMockData } from "../mockData/config";
 import fetchDataFromAMIGO from "../mockData/fetchDataFromAMIGO";
 import { DataFromAMIGO } from "../mockData/interfaces";
+import { onNewTransaction } from "../workers/onNewTransaction";
 
 export class NodeDatabaseService {
   private readonly db: NodeDatabase
@@ -80,16 +81,17 @@ export class NodeDatabaseService {
   }
 
   fetchDataFromAMIGO() {
-    setInterval(() => {
-      fetchDataFromAMIGO('http:/127.0.0.1')
+    setInterval(async() => {
+      await fetchDataFromAMIGO('http:/127.0.0.1')
         .then(value => {
           this.handleDataFromAMIGO(value)
         })
+      this.sendNewTransactionsToMQTT()
     }, 2000)
   }
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {
-    console.log('Got data: ', data);
+    // console.log('Got data: ', data);
 
     // 1. Inserting new entries
     await Promise.all(data.producers.map(async value => {
@@ -713,14 +715,18 @@ export class NodeDatabaseService {
 
           const cost = prosumer1Trade.pay*(1-operator.opCoef/100)*(prosumer2Trade.energyOut - prosumer2Trade.energyIn) / (S1 + S2)
           const price = prosumer1Trade.price
+          const time = new Date(Date.now()).toISOString()
+          const approved = false
+          const amount = cost / price
+
           await this.transactionRepository.insert({
             cost: cost,
-            time: new Date(Date.now()).toISOString(),
+            time: time,
             from: prosumer1,
             to: prosumer2,
-            price: price, //todo: is it correct?
-            amount: cost/price,
-            approved: false
+            price: price,
+            amount: amount,
+            approved: approved
           })
         }
       }
@@ -748,6 +754,7 @@ export class NodeDatabaseService {
 
       const cost = consumerTrade.pay*(operator.opCoef/100)
       const price = consumerTrade.price
+
       await this.transactionRepository.insert({
         cost: cost,
         time: new Date(Date.now()).toISOString(),
@@ -758,6 +765,8 @@ export class NodeDatabaseService {
         approved: false
       })
     }))
+
+
     await Promise.all(data.prosumers.map(async value => {
       const prosumer = await this.cellRepository.findOneOrFail({
         where: {
@@ -782,16 +791,46 @@ export class NodeDatabaseService {
 
         const cost = prosumerTrade.pay*operator.opCoef/100
         const price = prosumerTrade.price
+        const time = new Date(Date.now()).toISOString()
+        const approved = false
+
         await this.transactionRepository.insert({
           cost: cost,
-          time: new Date(Date.now()).toISOString(),
+          time: time,
           price: price,
           amount: cost/price,
           from: prosumer,
           to: operator,
-          approved: false
+          approved: approved
         })
       }
     }))
+  }
+
+  async sendNewTransactionsToMQTT() {
+    const newTransactions = await this.transactionRepository.find({
+      where: {
+        sentToMqtt: false
+      },
+      relations: ['from', 'to']
+    })
+    for (const value of newTransactions) {
+      await onNewTransaction({
+        amount: value.amount,
+        approved: value.approved,
+        cost: value.cost,
+        from: value.from.ethAddress,
+        to: value.to.ethAddress,
+        price: value.price,
+        time: value.time
+      })
+    }
+    for (const value of newTransactions) {
+      await this.transactionRepository.update({
+        id: value.id
+      }, {
+        sentToMqtt: true
+      })
+    }
   }
 }

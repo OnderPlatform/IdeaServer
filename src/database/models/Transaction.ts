@@ -27,4 +27,7 @@ export class Transaction extends BaseEntity {
 
   @Column()
   approved!: boolean
+
+  @Column({default: false})
+  sentToMqtt!: boolean
 }
