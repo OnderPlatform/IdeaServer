@@ -26,12 +26,6 @@ var pool = workerpool.pool('./src/workers/asyncWorker.js');
 
     // example: remove after implementation
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-
-
-
-
-
-
   pool.proxy()
       .then((worker: any) => {
         return worker.asyncAdd(3, 4.1);
@@ -51,7 +45,7 @@ var pool = workerpool.pool('./src/workers/asyncWorker.js');
     const mqtt = new mqtt_cl.ClientMQTT()
     mqtt.add_handler(this.handler)
     mqtt.start()
-      this.setCorsHeaders(ctx);
+      this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       excel.parse()
     })

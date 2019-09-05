@@ -1,0 +1,87 @@
+    GeneratingUnit: !include AMIGOMAIN.xsd#GeneratingUnit
+    EnergyConsumer: !include AMIGOMAIN.xsd#EnergyConsumer
+    EnergyStoragingUnit: !include AMIGOMAIN.xsd#EnergyStoragingUnit
+    ExternalGrid: !include AMIGOMAIN.xsd#ExternalGrid
+    WeatherStation: !include AMIGOMAIN.xsd#WeatherStation
+    Bus: !include AMIGOMAIN.xsd#Bus
+    Branch: !include AMIGOMAIN.xsd#Branch
+    EnergyConsumerGroup: !include AMIGOMAIN.xsd#EnergyConsumerGroup
+    EnergyProvider: !include AMIGOMAIN.xsd#EnergyProvider
+    MeasurementValue: !include AMIGOMAIN.xsd#MeasurementValue
+    Operation: !include AMIGOMAIN.xsd#Operation
+    MVList: !include AMIGOMAIN.xsd#MeasurementValue []
+    MVList2: !include AMIGOMAIN.xsd#MeasurementValue [] []
+    AmigoStateSnapshot: !include AMIGOMAIN.xsd#AmigoStateSnapshot
+    EventRecordToResponseList: !include AMIGOMAIN.xsd#EventRecordToResponse []
+    ComputedData: !include AMIGOMAIN.xsd#ComputedData
+    ComputedDataList: !include AMIGOMAIN.xsd#ComputedData []
+    TariffRate: !include AMIGOMAIN.xsd#TariffRate
+    TariffRateList: !include AMIGOMAIN.xsd#TariffRate []
+    Savings: !include AMIGOMAIN.xsd#Savings
+    SavingsList: !include AMIGOMAIN.xsd#Savings []
+    BenefitSummary: !include AMIGOMAIN.xsd#BenefitSummary
+    BenefitSummaryList: !include AMIGOMAIN.xsd#BenefitSummary []
+    IOList: !include AMIGOMAIN.xsd#IdentifiedObject []
+    RepoStatistics: !include AMIGOMAIN.xsd#RepoStatistics
+    RegressionModel: !include AMIGOMAIN.xsd#RegressionModel
+    RuntimeCommand: !include AMIGOMAIN.xsd#RuntimeCommand
+    AmigoInstallationInfo: !include AMIGOMAIN.xsd#AmigoInstallationInfo
+
+    EmEvent:
+        type: object
+        properties:
+            event:
+                required: true
+                type: string
+    EmMessage:
+        type: object
+        properties:
+            moduleName:
+                required: true
+                type: string
+            instanceNumber:
+                required: true
+                type: integer
+            operation:
+                required: true
+                type: string
+            action:
+                required: true
+                type: string
+    ValueToRepo:
+        type: object
+        properties:
+            path:
+                type: string
+            purposeKey:
+                type: string
+            value:
+                type: number
+                format: double
+            event:
+                type: string
+    Message:
+        type: object
+        properties:
+            done:
+                type: boolean
+            text:
+                type: string
+    Update:
+        type: object
+        properties:
+            localPath:
+                type: string
+            remotePath:
+                type: string
+            size:
+                type: integer
+    AmigoModificationPlan:
+        type: object
+        properties:
+            source:
+                type: string
+            update:
+                type: Update[]
+            remove:
+                type: string[]

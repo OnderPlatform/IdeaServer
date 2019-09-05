@@ -1,0 +1,80 @@
+uriParameters:
+    start:
+        description: "начало запрашиваемого периода"
+        type: string
+        required: false
+    end:
+        description: "конец запрашиваемого периода"
+        type: string
+        required: false
+    hallid:
+        description: "chargeHallId"
+        type: string
+        required: false
+    tableid:
+        description: "chargeTableId"
+        type: string
+        required: false
+    batchid:
+        description: "acbBatchId"
+        type: string
+        required: false
+    from:
+        description: "откуда"
+        type: string
+        required: false
+    to:
+        description: "recipient"
+        type: string
+        required: false
+get:
+    responses:
+        200:
+            body: AKOMMsgList
+/batches:
+    uriParameters:
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+    get:
+        responses:
+            200:
+                body: AKOMBatchList
+/sessions:
+    uriParameters:
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+    get:
+        responses:
+            200:
+                body: AKOMBatchList
+
+/states:
+    uriParameters:
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+        batchIds:
+            description: "идентификаторы партий аккумуляторов"
+            type: string[]
+            required: false
+    get:
+        responses:
+            200:
+                body: AKOMStateList

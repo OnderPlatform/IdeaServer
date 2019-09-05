@@ -1,0 +1,92 @@
+uriParameters:
+    purposeKey:
+        type: string
+        default: FL24
+        description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+    forecastDate:
+        description: "начало запрашиваемого периода"
+        type: datetime
+        required: false
+get:
+    responses:
+        200:
+            body: ComputedDataList
+#                            example: {"timeStamp":"2017-01-27T09:31:14.889+03:00[Europe/Moscow]",
+#                                "measurementValueQuality":{"validity":"GOOD","source":"PROCESS"},
+#                                "value":3.141592653589793}
+/row:
+    uriParameters:
+        purposeKey:
+            type: string
+            default: FL24
+            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+        length:
+            type: integer
+            description: "Длина ряда значений"
+            required: false
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+        interval:
+            description: "интервал агрегации"
+            type: string
+            required: false
+        mode:
+            description: "способ агрегации в интервале"
+            type: string
+            required: false
+        byTimeStamp:
+            description: "поиск по timeStamp попадающему в start end"
+            type: boolean
+            required: false
+        serverTime:
+            description: "представлять данные во времени сервера"
+            type: boolean
+            required: false
+    get:
+        responses:
+            200:
+                body: ComputedDataList
+/mvrow:
+    uriParameters:
+        purposeKey:
+            type: string
+            default: FL24
+            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+        length:
+            type: integer
+            description: "Длина ряда значений"
+            required: false
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+        interval:
+            description: "интервал агрегации"
+            type: string
+            required: false
+        mode:
+            description: "способ агрегации в интервале"
+            type: string
+            required: false
+        byTimeStamp:
+            description: "поиск по timeStamp попадающему в start end"
+            type: boolean
+            required: false
+        serverTime:
+            description: "представлять данные во времени сервера"
+            type: boolean
+            required: false
+    get:
+        responses:
+            200:
+                body: MVList2

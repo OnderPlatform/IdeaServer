@@ -16,6 +16,5 @@
     "declarationMap": true,
     "sourceRoot": "src/",
     "outDir": "dist/"
-  },
-
+  }
 }

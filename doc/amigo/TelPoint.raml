@@ -1,0 +1,112 @@
+uriParameters:
+    purposeKey:
+        type: string
+        default: TMMM
+        description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+    position:
+        type: integer
+        default: 0
+        description: "Номер элемента с конца"
+    resourceId:
+        type: string
+        required: false
+        description: "Идентификатор ресурса"
+get:
+    responses:
+        200:
+            body: MeasurementValue
+#                            example: {"timeStamp":"2017-01-27T09:31:14.889+03:00[Europe/Moscow]",
+#                                "measurementValueQuality":{"validity":"GOOD","source":"PROCESS"},
+#                                "value":3.141592653589793}
+post:
+    body:
+        application/json:
+            type: Operation
+#                    example: {"ctlAnalogVal":3.141592653589793,"ctlDiscreteVal":null,"oper":null,
+#                        "originator":"CADR","plannedExTime":"2017-01-27T09:31:19.931+03:00[Europe/Moscow]",
+#                        "timeStamp":"2017-01-27T09:31:14.931+03:00[Europe/Moscow]","ctlStatus":"NOT_STARTED","estExecTime":10}
+    responses:
+        200:
+            body: Message
+/row:
+    uriParameters:
+        purposeKey:
+            type: string
+            default: FL24
+            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+        length:
+            type: integer
+            description: "Длина ряда значений"
+            required: false
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: false
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: false
+        interval:
+            description: "интервал агрегации"
+            type: string
+            required: false
+        mode:
+            description: "способ агрегации в интервале"
+            type: string
+            required: false
+        serverTime:
+            description: "представлять данные во времени сервера"
+            type: boolean
+            required: false
+    get:
+        responses:
+            200:
+                body: MVList
+    post:
+        body:
+            application/json:
+                type: MVList
+#                            example: [{"timeStamp":"2017-01-27T09:31:14.889+03:00[Europe/Moscow]",
+#                                "measurementValueQuality":{"validity":"GOOD","source":"PROCESS"},
+#                                "value":3.141592653589793}]
+        responses:
+            200:
+                body: Message
+/max:
+    uriParameters:
+        start:
+            description: "начало запрашиваемого периода"
+            type: string
+            required: true
+        end:
+            description: "конец запрашиваемого периода"
+            type: string
+            required: true
+        purposeKey:
+            type: string
+            default: TMMM
+            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+    get:
+        responses:
+            200:
+                body: MVList
+/archive: !include Archive.raml
+#возможно, надо будет перенести в отдельный файл
+/regressionModel:
+    uriParameters:
+        purposeKey:
+            type: string
+            default: FL24
+            description: "Назначение данных в репозитории: телеметрия, прогноз, оптимизированное значение"
+        position:
+            type: integer
+            default: 0
+            description: "Номер элемента с конца"
+        lastAdequate:
+            type: boolean
+            default: true
+            description: "запрос последней адекватной модели"
+    get:
+        responses:
+            200:
+                body: RegressionModel
