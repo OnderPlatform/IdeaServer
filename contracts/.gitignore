@@ -1,0 +1,5 @@
+dist/
+migrations/*.js
+migrations/*.d.ts
+migrations/*.js.map
+src/wrappers/

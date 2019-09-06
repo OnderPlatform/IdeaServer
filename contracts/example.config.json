@@ -1,0 +1,9 @@
+{
+  "port": 9005,
+  "mnemonic": "nurse museum response erase light decorate tongue guide shove bundle sound place",
+  "infuraToken": "5cd2eb52bfce484995e6e5b422f0e7f1",
+  "contract": "0xa8A9ABc7aB3ec73C340e39B344b012DB2Ec1e05A",
+  "network": "rinkeby",
+  "gatheringInterval": 86400,
+  "gatheringURL": "http://localhost:9001"
+}

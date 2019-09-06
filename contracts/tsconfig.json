@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "declaration": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "target": "es5",
+    "lib": [
+      "es2018",
+      "dom"
+    ],
+    "sourceRoot": "src/",
+    "outDir": "dist/",
+    "types": [
+      "@machinomy/types-truffle-deployer",
+      "@machinomy/types-truffle",
+      "@machinomy/types-truffle-contract",
+      "@machinomy/types-ethereumjs-units",
+      "@machinomy/types-ethereumjs-util",
+      "@machinomy/types-web3",
+      "@types/node",
+      "@types/mocha"
+    ],
+    "downlevelIteration": true
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
