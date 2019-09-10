@@ -26,28 +26,31 @@ var pool = workerpool.pool('./src/workers/asyncWorker.js');
 
     // example: remove after implementation
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-  pool.proxy()
-      .then((worker: any) => {
-        return worker.asyncAdd(3, 4.1);
-      })
-      .then((result: any) => {
-        console.log(result);
-      })
-      .catch((err: any) => {
-        console.error(err);
-      })
-      .then(() => {
-        pool.terminate(); // terminate all workers when done
-      });
 
 
+  // pool.proxy()
+  //     .then((worker: any) => {
+  //       return worker.asyncAdd(3, 4.1);
+  //     })
+  //     .then((result: any) => {
+  //       console.log(result);
+  //     })
+  //     .catch((err: any) => {
+  //       console.error(err);
+  //     })
+  //     .then(() => {
+  //       pool.terminate(); // terminate all workers when done
+  //     });
 
+
+//  publishProgress(enode: number,contractID: number,amount: number, seller: string, contragent: string,delta: number)
     const mqtt = new mqtt_cl.ClientMQTT()
     mqtt.add_handler(this.handler)
     mqtt.start()
       this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       excel.parse()
+      mqtt.publishProgress(1,1,200,"Enode1","Enode2",12.5)
     })
 
     return router
