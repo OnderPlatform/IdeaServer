@@ -1,4 +1,5 @@
 import * as Router from 'koa-router'
+import * as fs from 'fs';
 
 export class BaseController {
 
@@ -52,6 +53,20 @@ var pool = workerpool.pool('./src/workers/asyncWorker.js');
       excel.parse()
       mqtt.publishProgress(1,1,200,"Enode1","Enode2",12.5)
     })
+
+    router.get('/download', async function(ctx) {
+      const fileName = `./result.xlsx`;
+      try {
+        if (fs.existsSync(fileName)) {
+          ctx.body = fs.createReadStream(fileName);
+          ctx.attachment(fileName);
+        } else {
+          ctx.throw(400, "Requested file not found on server");
+        }
+      } catch(error) {
+        ctx.throw(500, error);
+      }
+    });
 
     return router
   }
