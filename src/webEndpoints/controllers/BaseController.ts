@@ -1,5 +1,6 @@
 import * as Router from 'koa-router'
 import * as fs from 'fs';
+import * as cron from 'node-cron'
 
 export class BaseController {
 
@@ -52,6 +53,9 @@ var pool = workerpool.pool('./src/workers/asyncWorker.js');
       ctx.response.body = 'Hello!'
       excel.parse()
       mqtt.publishProgress(1,1,200,"Enode1","Enode2",12.5)
+      cron.schedule("* * * * *", function() {
+  console.log("running a task every minute");
+});
     })
 
     router.get('/download', async function(ctx) {
