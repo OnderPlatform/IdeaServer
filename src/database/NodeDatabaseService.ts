@@ -1,12 +1,12 @@
 import NodeDatabase from './NodeDatabase'
 import { CellRepository } from "./repositories/CellRepository";
-import { getCustomRepository } from "typeorm";
+import { getCustomRepository, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
 import { initialMockData } from "../mockData/config";
 import fetchDataFromAMIGO from "../mockData/fetchDataFromAMIGO";
-import { DataFromAMIGO } from "../mockData/interfaces";
+import { DataFromAMIGO, HashingInfo } from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
 
 export class NodeDatabaseService {
@@ -81,13 +81,13 @@ export class NodeDatabaseService {
   }
 
   fetchDataFromAMIGO() {
-    setInterval(async() => {
-      await fetchDataFromAMIGO('http:/127.0.0.1')
-        .then(value => {
-          this.handleDataFromAMIGO(value)
-        })
-      this.sendNewTransactionsToMQTT()
-    }, 2000)
+    // setInterval(async() => {
+    //   await fetchDataFromAMIGO('http:/127.0.0.1')
+    //     .then(value => {
+    //       this.handleDataFromAMIGO(value)
+    //     })
+    //   this.sendNewTransactionsToMQTT()
+    // }, 2000)
   }
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {
@@ -805,6 +805,62 @@ export class NodeDatabaseService {
         })
       }
     }))
+  }
+
+  async tradeInfoForHashing (): Promise<HashingInfo> {
+    const tradeConsumerTableForLastDay = await this.tradeRepository.find({
+      where: {
+        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        type: 'consumer'
+      }
+    })
+    const tradeProducerTableForLastDay = await this.tradeRepository.find({
+      where: {
+        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        type: 'producer'
+      }
+    })
+    const tradeProsumerTableForLastDay = await this.tradeRepository.find({
+      where: {
+        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        type: 'prosumer'
+      }
+    })
+
+    return {
+      consumer: {
+        date: Date.now(),
+        consumer: tradeConsumerTableForLastDay.map(value => {
+          if (!value.energy)
+            throw new Error('null energy')
+          return {
+            energy: value.energy
+          }
+        })
+      },
+      producer: {
+        date: Date.now(),
+        producer: tradeProducerTableForLastDay.map(value => {
+          if (!value.energy || !value.power)
+            throw new Error('null energy or null power')
+          return {
+            energy: value.energy,
+            power: value.power
+          }
+        })
+      },
+      prosumer: {
+        date: Date.now(),
+        prosumer: tradeProsumerTableForLastDay.map(value => {
+          if (!value.energyIn || !value.energyOut)
+            throw new Error('null energyIn or energyOut')
+          return {
+            energyIn: value.energyIn,
+            energyOut: value.energyOut
+          }
+        })
+      }
+    }
   }
 
   async sendNewTransactionsToMQTT() {

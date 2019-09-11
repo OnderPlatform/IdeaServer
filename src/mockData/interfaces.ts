@@ -1,6 +1,7 @@
 // Interfaces related to AMIGO
 import * as ts from 'typescript/lib/tsserverlibrary'
 import createInstallTypingsRequest = ts.server.createInstallTypingsRequest
+import { Timestamp } from "typeorm";
 
 export interface ProducerData {
   time: Date,
@@ -43,7 +44,7 @@ export interface TransactionEntry {
   amount: number,
   from: string,
   to: string,
-  approved: boolean
+  approved: boolean | undefined
 }
 
 export interface TradeProsumerEntry {
@@ -85,4 +86,33 @@ export interface AlgorithmResult {
   },
   prosumersEnergyAll: Array <ProsumerAndHisEnergyInAll>,
   transactionTable: Array <TransactionEntry>,
+}
+
+export interface ConsumerHashingInfo {
+  date: number
+  consumer: Array<{
+    energy: number
+  }>
+}
+
+export interface ProducerHashingInfo {
+  date: number
+  producer: Array<{
+    energy: number
+    power: number
+  }>
+}
+
+export interface ProsumerHashingInfo {
+  date: number
+  prosumer: Array<{
+    energyIn: number
+    energyOut: number
+  }>
+}
+
+export interface HashingInfo {
+  producer: ProducerHashingInfo
+  consumer: ConsumerHashingInfo
+  prosumer: ProsumerHashingInfo
 }

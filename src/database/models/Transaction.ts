@@ -25,8 +25,8 @@ export class Transaction extends BaseEntity {
   @Column({type: 'real'})
   cost!: number
 
-  @Column()
-  approved!: boolean
+  @Column({nullable: true})
+  approved?: boolean
 
   @Column({default: false})
   sentToMqtt!: boolean
