@@ -109,16 +109,19 @@ export class BaseController {
   async getAdminTransactions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     ctx.response.body = await this.db.service.adminTransactions()
+    ctx.response.status = 200
   }
 
   async getAdminConsumptions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     ctx.response.body = await this.db.service.adminConsumptions()
+    ctx.response.status = 200
   }
 
   async getAdminProductions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     ctx.response.body = await this.db.service.adminProductions()
+    ctx.response.status = 200
   }
 
   async postLogin(ctx: Router.IRouterContext) {
@@ -151,6 +154,7 @@ export class BaseController {
   async getAdminAnchors(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     ctx.response.body = await this.db.service.adminAnchor()
+    ctx.response.status = 200
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
@@ -158,6 +162,7 @@ export class BaseController {
     try {
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.userMargin(body.margin, who)
+      ctx.response.status = 201
     } catch (e) {
       console.log(e);
     }
@@ -167,24 +172,28 @@ export class BaseController {
     this.setCorsHeaders(ctx)
     const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     ctx.response.body = await this.db.service.userConsumption(who)
+    ctx.response.status = 200
   }
 
   async getUserProductions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     ctx.response.body = await this.db.service.userProduction(who)
+    ctx.response.status = 200
   }
 
   async getUserTransactions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     ctx.response.body = await this.db.service.userTransactions(who)
+    ctx.response.status = 200
   }
 
   async getUserAnchors(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     ctx.response.body = await this.db.service.userAnchor(who)
+    ctx.response.status = 200
   }
 
   getUserExcelEnergy(ctx: Router.IRouterContext) {
@@ -204,6 +213,7 @@ export class BaseController {
     try {
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.postPrices(body, who)
+      ctx.response.status = 201
     } catch (e) {
       console.log(e);
     }
