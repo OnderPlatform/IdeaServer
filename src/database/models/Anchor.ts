@@ -1,6 +1,5 @@
 import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, PrimaryColumn, ManyToOne } from 'typeorm'
 import { User } from "./User";
-import { Cell } from "./Cell";
 
 @Entity()
 export class Anchor extends BaseEntity {

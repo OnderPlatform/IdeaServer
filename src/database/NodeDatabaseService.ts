@@ -9,18 +9,16 @@ import fetchDataFromAMIGO from "../mockData/fetchDataFromAMIGO";
 import {
   AdminAnchor,
   AdminConsumptions,
-  AdminLogin,
   AdminProductions,
   AdminTransactions,
   DataFromAMIGO,
   HashingInfo, UserAnchor,
   UserConsumption,
-  UserLogin,
+  Authorization,
   UserMargin, UserPrices, UserProduction, UserTransactions
 } from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
 import { AnchorRepository } from "./repositories/AnchorRepository";
-import { Transaction } from "./models";
 
 export class NodeDatabaseService {
   private readonly db: NodeDatabase
@@ -990,10 +988,6 @@ export class NodeDatabaseService {
     }
   }
 
-  async adminLogin(auth: AdminLogin) {
-    return !!(auth.login === 'kanzeparov@yandex.ru' && auth.password === '1234567890');
-  }
-
   async adminAnchor(): Promise<AdminAnchor> {
     const anchors = await this.anchorRepository.find({
       relations: ['user']
@@ -1011,7 +1005,7 @@ export class NodeDatabaseService {
     }
   }
 
-  async userLogin(auth: UserLogin) {
+  async authorization(auth: Authorization) {
     return !!(auth.login === 'kanzeparov@yandex.ru' && auth.password === '1234567890');
   }
 

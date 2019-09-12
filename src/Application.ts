@@ -7,7 +7,6 @@ export default class Application {
   private readonly db: NodeDatabase
 
   constructor () {
-    this.web = new WebServer(8888, 'localhost')
     this.db = new NodeDatabase({
       'type': 'postgres',
       'host': 'localhost',
@@ -21,6 +20,7 @@ export default class Application {
         'dist/database/models/**/*.js'
       ]
     })
+    this.web = new WebServer(8888, 'localhost', this.db)
   }
 
   async start (): Promise<void> {

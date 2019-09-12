@@ -1,9 +1,18 @@
 import * as Router from 'koa-router'
 import * as fs from 'fs';
 import * as cron from 'node-cron'
-
+import * as koaBody from 'koa-body'
+import NodeDatabase from "../../database/NodeDatabase";
 
 export class BaseController {
+  public readonly db: NodeDatabase
+
+
+  constructor(db: NodeDatabase) {
+    this.db = db
+  }
+
+
 
   handler(value: string, message: string): void {
     console.log("Receive new message %o ", value)
@@ -28,6 +37,20 @@ export class BaseController {
 
     // example: remove after implementation
     router.get(`${namespace}/admin/transaction`, this.getAdminTransactions.bind(this))
+    router.get(`${namespace}/admin/consumption`, this.getAdminConsumptions.bind(this))
+    router.get(`${namespace}/admin/production`, this.getAdminProductions.bind(this))
+    router.get(`${namespace}/admin/anchor`, this.getAdminAnchors.bind(this))
+    router.post(`${namespace}/login`, koaBody(), this.postLogin.bind(this))
+    router.get(`${namespace}/admin/excel/energy`, this.getAdminExcelEnergy.bind(this))
+    router.get(`${namespace}/admin/excel/transaction`, this.getAdminExcelTransaction.bind(this))
+    router.post(`${namespace}/margin`, koaBody(), this.postUserMargin.bind(this))
+    router.get(`${namespace}/consumption`, this.getUserConsumptions.bind(this))
+    router.get(`${namespace}/production`, this.getUserProductions.bind(this))
+    router.get(`${namespace}/transaction`, this.getUserTransactions.bind(this))
+    router.get(`${namespace}/anchor`, this.getUserAnchors.bind(this))
+    router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
+    router.get(`${namespace}/excel/energy`, this.getUserExcelEnergy.bind(this))
+    router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
 
 
@@ -83,7 +106,109 @@ export class BaseController {
     ctx.response.status = 200
   }
 
-  getAdminTransactions(ctx: Router.IRouterContext) {
+  async getAdminTransactions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    ctx.response.body = await this.db.service.adminTransactions()
   }
+
+  async getAdminConsumptions(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    ctx.response.body = await this.db.service.adminConsumptions()
+  }
+
+  async getAdminProductions(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    ctx.response.body = await this.db.service.adminProductions()
+  }
+
+  async postLogin(ctx: Router.IRouterContext) {
+    try {
+      const body = JSON.parse(ctx.request.body as string)
+      if (body) {
+          if (await this.db.service.authorization(body)) {
+            ctx.response.status = 202
+          } else {
+            ctx.response.status = 401
+          }
+      } else {
+        ctx.response.status = 400
+      }
+    } catch (e) {
+      console.log('Error while auth. Error message: ', e);
+    }
+  }
+
+  getAdminExcelEnergy(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    ctx.response.status = 501
+  }
+
+  getAdminExcelTransaction(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    ctx.response.status = 501
+  }
+
+  async getAdminAnchors(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    ctx.response.body = await this.db.service.adminAnchor()
+  }
+
+  async postUserMargin(ctx: Router.IRouterContext) {
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    try {
+      const body = JSON.parse(ctx.request.body as string)
+      await this.db.service.userMargin(body.margin, who)
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async getUserConsumptions(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userConsumption(who)
+  }
+
+  async getUserProductions(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userProduction(who)
+  }
+
+  async getUserTransactions(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userTransactions(who)
+  }
+
+  async getUserAnchors(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userAnchor(who)
+  }
+
+  getUserExcelEnergy(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.status = 501
+  }
+
+  getUserExcelTransaction(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.status = 501
+  }
+
+  async postUserPrice(ctx: Router.IRouterContext) {
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    try {
+      const body = JSON.parse(ctx.request.body as string)
+      await this.db.service.postPrices(body, who)
+    } catch (e) {
+      console.log(e);
+    }
+
+  }
+
+
 }

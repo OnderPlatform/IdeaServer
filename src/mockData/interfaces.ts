@@ -168,11 +168,6 @@ export interface AdminProductions {
   }>
 }
 
-export interface AdminLogin {
-  login: string
-  password: string
-}
-
 export interface AdminAnchor {
   "anchors": Array<{
     "date": string,
@@ -182,7 +177,7 @@ export interface AdminAnchor {
   }>
 }
 
-export interface UserLogin {
+export interface Authorization {
   login: string
   password: string
 }
