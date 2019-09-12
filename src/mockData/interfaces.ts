@@ -1,7 +1,5 @@
 // Interfaces related to AMIGO
-import * as ts from 'typescript/lib/tsserverlibrary'
-import createInstallTypingsRequest = ts.server.createInstallTypingsRequest
-import { Timestamp } from "typeorm";
+
 
 export interface ProducerData {
   time: Date,
@@ -88,14 +86,14 @@ export interface AlgorithmResult {
   transactionTable: Array <TransactionEntry>,
 }
 
-export interface ConsumerHashingInfo {
+interface ConsumerHashingInfo {
   date: number
   consumer: Array<{
     energy: number
   }>
 }
 
-export interface ProducerHashingInfo {
+interface ProducerHashingInfo {
   date: number
   producer: Array<{
     energy: number
@@ -103,7 +101,7 @@ export interface ProducerHashingInfo {
   }>
 }
 
-export interface ProsumerHashingInfo {
+interface ProsumerHashingInfo {
   date: number
   prosumer: Array<{
     energyIn: number
@@ -116,3 +114,171 @@ export interface HashingInfo {
   consumer: ConsumerHashingInfo
   prosumer: ProsumerHashingInfo
 }
+
+export interface AdminTransactions {
+  transaction: Array<{
+    time: string
+    from: string
+    to: string
+    price: number
+    transfer_energy: number
+    transfer_coin: number
+  }>
+}
+
+export interface AdminConsumptions {
+  "minEnergy": number,
+  "maxEnergy": number,
+  "averageEnergy": number,
+  "minPrice": number,
+  "maxPrice": number,
+  "averagePrice": number,
+  "energy_today": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "energy_30_day": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "price_today": Array<{
+    "date": string,
+    "price": number
+  }>
+  "price_30_day": Array<{
+    "date": string,
+    "price": number
+  }>
+  "consumption_peers": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>
+}
+
+export interface AdminProductions {
+  "production_peers": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>
+}
+
+export interface AdminLogin {
+  login: string
+  password: string
+}
+
+export interface AdminAnchor {
+  "anchors": Array<{
+    "date": string,
+    "participant": string,
+    "id": string,
+    "address": string
+  }>
+}
+
+export interface UserLogin {
+  login: string
+  password: string
+}
+
+export interface UserMargin {
+  margin: number
+}
+
+export interface UserConsumption {
+  "minEnergy": number,
+  "maxEnergy": number,
+  "averageEnergy": number,
+  "minPrice": number,
+  "maxPrice": number,
+  "averagePrice": number,
+  "energy_today": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "energy_30_day": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "price_today": Array<{
+    "date": string,
+    "price": number
+  }>
+  "price_30_day": Array<{
+    "date": string,
+    "price": number
+  }>
+  "consumption_peers": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>
+}
+
+export interface UserProduction {
+  "minEnergy": number,
+  "maxEnergy": number,
+  "averageEnergy": number,
+  "minPrice": number,
+  "maxPrice": number,
+  "averagePrice": number,
+  "energy_today": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "energy_30_day": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "price_today": Array<{
+    "date": string,
+    "price": number
+  }>
+  "price_30_day": Array<{
+    "date": string,
+    "price": number
+  }>
+  "production_peers": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>
+}
+
+export interface UserTransactions {
+  "transaction": Array<{
+    "time": string,
+    "from": string,
+    "to": string,
+    "price": number,
+    "transfer_energy": number,
+    "transfer_coin": number
+  }>
+}
+
+export interface UserAnchor {
+  "anchors": Array<{
+    "data": string,
+    "participant": string,
+    "hashId": string,
+    "address": string
+  }>
+}
+
+export interface UserPrices {
+  "prices": Array<{
+    "amount": number,
+    "price": number
+  }>
+}
+

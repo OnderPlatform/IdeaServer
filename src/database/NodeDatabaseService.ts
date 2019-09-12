@@ -6,8 +6,21 @@ import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
 import { initialMockData } from "../mockData/config";
 import fetchDataFromAMIGO from "../mockData/fetchDataFromAMIGO";
-import { DataFromAMIGO, HashingInfo } from "../mockData/interfaces";
+import {
+  AdminAnchor,
+  AdminConsumptions,
+  AdminLogin,
+  AdminProductions,
+  AdminTransactions,
+  DataFromAMIGO,
+  HashingInfo, UserAnchor,
+  UserConsumption,
+  UserLogin,
+  UserMargin, UserPrices, UserProduction, UserTransactions
+} from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
+import { AnchorRepository } from "./repositories/AnchorRepository";
+import { Transaction } from "./models";
 
 export class NodeDatabaseService {
   private readonly db: NodeDatabase
@@ -15,6 +28,7 @@ export class NodeDatabaseService {
   public readonly tradeRepository: TradeRepository = getCustomRepository(TradeRepository)
   public readonly transactionRepository: TransactionRepository = getCustomRepository(TransactionRepository)
   public readonly userRepository: UserRepository = getCustomRepository(UserRepository)
+  public readonly anchorRepository: AnchorRepository = getCustomRepository(AnchorRepository)
 
   constructor (db: NodeDatabase) {
     this.db = db
@@ -81,13 +95,13 @@ export class NodeDatabaseService {
   }
 
   fetchDataFromAMIGO() {
-    // setInterval(async() => {
-    //   await fetchDataFromAMIGO('http:/127.0.0.1')
-    //     .then(value => {
-    //       this.handleDataFromAMIGO(value)
-    //     })
-    //   this.sendNewTransactionsToMQTT()
-    // }, 2000)
+    setInterval(async () => {
+      await fetchDataFromAMIGO('http:/127.0.0.1')
+        .then(value => {
+          this.handleDataFromAMIGO(value)
+        })
+      this.sendNewTransactionsToMQTT()
+    }, 2000)
   }
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {
@@ -476,7 +490,6 @@ export class NodeDatabaseService {
           time: new Date(Date.now()).toISOString(),
           price: price, //todo: is it correct?
           amount: cost/consumerTrade.price,
-          approved: false
         })
       }
     }
@@ -557,7 +570,6 @@ export class NodeDatabaseService {
             time: new Date(Date.now()).toISOString(),
             price: price, //todo: is it correct
             amount: cost/price,
-            approved: false
           })
         }
       }
@@ -639,7 +651,6 @@ export class NodeDatabaseService {
             to: prosumer,
             price: price, //todo: is it correct?
             amount: cost/price,
-            approved: false
           })
         }
       }
@@ -716,7 +727,6 @@ export class NodeDatabaseService {
           const cost = prosumer1Trade.pay*(1-operator.opCoef/100)*(prosumer2Trade.energyOut - prosumer2Trade.energyIn) / (S1 + S2)
           const price = prosumer1Trade.price
           const time = new Date(Date.now()).toISOString()
-          const approved = false
           const amount = cost / price
 
           await this.transactionRepository.insert({
@@ -726,7 +736,6 @@ export class NodeDatabaseService {
             to: prosumer2,
             price: price,
             amount: amount,
-            approved: approved
           })
         }
       }
@@ -762,7 +771,6 @@ export class NodeDatabaseService {
         to: operator,
         price: price,
         amount: cost/price,
-        approved: false
       })
     }))
 
@@ -792,7 +800,6 @@ export class NodeDatabaseService {
         const cost = prosumerTrade.pay*operator.opCoef/100
         const price = prosumerTrade.price
         const time = new Date(Date.now()).toISOString()
-        const approved = false
 
         await this.transactionRepository.insert({
           cost: cost,
@@ -801,7 +808,6 @@ export class NodeDatabaseService {
           amount: cost/price,
           from: prosumer,
           to: operator,
-          approved: approved
         })
       }
     }))
@@ -861,6 +867,468 @@ export class NodeDatabaseService {
         })
       }
     }
+  }
+
+  async adminTransactions(): Promise<AdminTransactions> {
+    const transactions = await this.transactionRepository.find({
+      relations: ['from', 'to']
+    })
+
+    return {
+      transaction: transactions.map(value => {
+        return {
+          time: value.time,
+          from: value.from.name,
+          to: value.to.name,
+          price: value.price,
+          transfer_energy: value.amount,
+          transfer_coin: value.cost
+        }
+      })
+    }
+  }
+
+  async adminConsumptions(): Promise<AdminConsumptions> {
+    const tradeTableConsumers = await this.tradeRepository.find({
+      where: {
+        type: "consumer"
+      },
+      relations: ['cell']
+    })
+    const minE = await this.tradeRepository.query('select min(energy) from trade where type = \'consumer\';')
+    const maxE = await this.tradeRepository.query('select max(energy) from trade where type = \'consumer\';')
+    const avgE = await this.tradeRepository.query('select avg(energy) from trade where type = \'consumer\';')
+    const minPrice = await this.tradeRepository.query('select min(price) from trade where type = \'consumer\';')
+    const maxPrice = await this.tradeRepository.query('select max(price) from trade where type = \'consumer\';')
+    const avgPrice = await this.tradeRepository.query('select avg(price) from trade where type = \'consumer\';')
+    const entitiesToday = await this.tradeRepository.find({
+      where: {
+        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        type: 'consumer'
+      }
+    })
+    const entities30Today = await this.tradeRepository.find({
+      where: {
+        time: Raw(columnAlias => `${columnAlias} > now() - '30 day'::interval`),
+        type: 'consumer'
+      }
+    })
+
+    return {
+      minEnergy: minE,
+      maxEnergy: maxE,
+      averageEnergy: avgE,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      averagePrice: avgPrice,
+      energy_today: entitiesToday.map(value => {
+        if (!value.energy)
+          throw new Error('energy is null')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      energy_30_day: entities30Today.map(value => {
+        if (!value.energy)
+          throw new Error('energy is null')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      price_today: entitiesToday.map(value => {
+        if (!value.price)
+          throw new Error('price is null')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      price_30_day: entitiesToday.map(value => {
+        if (!value.price)
+          throw new Error('price is null')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      consumption_peers: tradeTableConsumers.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance,
+          bought: value.energy,
+          price: value.price
+        }
+      })
+    }
+  }
+
+  async adminProductions(): Promise<AdminProductions> {
+    const producers = await this.tradeRepository.find({
+      where: {
+        type: 'producer'
+      },
+      relations: ['cell']
+    })
+
+    return {
+      production_peers: producers.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance,
+          sold: value.energy,
+          price: value.price
+        }
+      })
+    }
+  }
+
+  async adminLogin(auth: AdminLogin) {
+    return !!(auth.login === 'kanzeparov@yandex.ru' && auth.password === '1234567890');
+  }
+
+  async adminAnchor(): Promise<AdminAnchor> {
+    const anchors = await this.anchorRepository.find({
+      relations: ['user']
+    })
+
+    return {
+      anchors: anchors.map(value => {
+        return {
+          date: value.time,
+          participant: value.user.cell.name,
+          id: value.hashId,
+          address: value.address
+        }
+      })
+    }
+  }
+
+  async userLogin(auth: UserLogin) {
+    return !!(auth.login === 'kanzeparov@yandex.ru' && auth.password === '1234567890');
+  }
+
+  async userMargin(data: UserMargin, cellEthAddress: string) {
+    await this.cellRepository.update({
+      margin: data.margin
+    }, {
+      ethAddress: cellEthAddress
+    })
+  }
+
+  async userConsumption(cellEthAddress: string): Promise<UserConsumption> {
+    const userCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+    const userTradeTable = await this.tradeRepository.find({
+      where: {
+        type: 'consumer',
+        cell: userCell
+      },
+      relations: ['cell']
+    })
+    const userTradeTable1Day = await this.tradeRepository.find({
+      where: {
+        type: 'consumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+      }
+    })
+    const userTradeTable30Day = await this.tradeRepository.find({
+      where: {
+        type: 'consumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+      }
+    })
+
+    if (!userTradeTable[0].energy)
+      throw new Error('user trade table seems to be empty')
+    const minE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.energy)
+        throw new Error('energy is null')
+      return currentValue.energy < previousValue ? currentValue.energy : previousValue
+    }, userTradeTable[0].energy)
+    const maxE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.energy)
+        throw new Error('energy is null')
+      return currentValue.energy > previousValue ? currentValue.energy : previousValue
+    }, userTradeTable[0].energy)
+    const avgE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.energy)
+        throw new Error('energy is null')
+      return currentValue.energy + previousValue
+    }, 0)/userTradeTable.length
+
+
+    if (!userTradeTable[0].price)
+      throw new Error('user trade table seems to be empty')
+    const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.price)
+        throw new Error('price is null')
+      return currentValue.price < previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.price)
+        throw new Error('price is null')
+      return currentValue.price > previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.price)
+        throw new Error('price is null')
+      return currentValue.price + previousValue
+    }, 0)/userTradeTable.length
+
+
+
+    return {
+      minEnergy: minE,
+      maxEnergy: maxE,
+      averageEnergy: avgE,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      averagePrice: avgPrice,
+      energy_today: userTradeTable1Day.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      energy_30_day: userTradeTable30Day.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      price_today: userTradeTable1Day.map(value => {
+        if (!value.price)
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      price_30_day: userTradeTable30Day.map(value => {
+        if (!value.price)
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      consumption_peers: userTradeTable.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance,
+          bought: value.energy,
+          price: value.price
+        }
+      })
+    }
+  }
+
+  async userProduction(cellEthAddress: string): Promise<UserProduction> {
+    const userCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+    const userTradeTable = await this.tradeRepository.find({
+      where: {
+        type: 'consumer',
+        cell: userCell
+      },
+      relations: ['cell']
+    })
+    const userTradeTable1Day = await this.tradeRepository.find({
+      where: {
+        type: 'consumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+      }
+    })
+    const userTradeTable30Day = await this.tradeRepository.find({
+      where: {
+        type: 'consumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+      }
+    })
+
+    if (!userTradeTable[0].energy)
+      throw new Error('user trade table seems to be empty')
+    const minE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.energy)
+        throw new Error('energy is null')
+      return currentValue.energy < previousValue ? currentValue.energy : previousValue
+    }, userTradeTable[0].energy)
+    const maxE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.energy)
+        throw new Error('energy is null')
+      return currentValue.energy > previousValue ? currentValue.energy : previousValue
+    }, userTradeTable[0].energy)
+    const avgE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.energy)
+        throw new Error('energy is null')
+      return currentValue.energy + previousValue
+    }, 0)/userTradeTable.length
+
+
+    if (!userTradeTable[0].price)
+      throw new Error('user trade table seems to be empty')
+    const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.price)
+        throw new Error('price is null')
+      return currentValue.price < previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.price)
+        throw new Error('price is null')
+      return currentValue.price > previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (!currentValue.price)
+        throw new Error('price is null')
+      return currentValue.price + previousValue
+    }, 0)/userTradeTable.length
+
+
+
+    return {
+      minEnergy: minE,
+      maxEnergy: maxE,
+      averageEnergy: avgE,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      averagePrice: avgPrice,
+      energy_today: userTradeTable1Day.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      energy_30_day: userTradeTable30Day.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      price_today: userTradeTable1Day.map(value => {
+        if (!value.price)
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      price_30_day: userTradeTable30Day.map(value => {
+        if (!value.price)
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      production_peers: userTradeTable.map(value => {
+        if (!value.energy)
+          throw new Error('null energy')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance,
+          sold: value.energy,
+          price: value.price
+        }
+      })
+    }
+  }
+
+  async userTransactions(cellEthAddress: string): Promise<UserTransactions> {
+    const myCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+    const transactions = await this.transactionRepository.find({
+      where: `"fromId" = ${myCell.id} or "toId" = ${myCell.id};`,
+      relations: ['from', 'to']
+    })
+
+    return {
+      transaction: transactions.map(value => {
+        return {
+          time: value.time,
+          from: value.from.name,
+          to: value.to.name,
+          price: value.price,
+          transfer_energy: value.amount,
+          transfer_coin: value.cost
+        }
+      })
+    }
+  }
+
+  async userAnchor(ethAddress: string): Promise<UserAnchor> {
+    const cell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: ethAddress
+      }
+    })
+    const user = await this.userRepository.findOneOrFail({
+      where: {
+        cell: cell
+      }
+    })
+    const userAnchors = await this.anchorRepository.find({
+      where: {
+        user: user
+      }
+    })
+
+    return {
+      anchors: userAnchors.map(value => {
+        return {
+          data: value.time,
+          participant: value.user.cell.name,
+          hashId: value.hashId,
+          address: value.address
+        }
+      })
+    }
+  }
+
+  async postPrices(data: UserPrices, ethAddress: string) {
+    const cell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: ethAddress
+      }
+    })
+    await this.cellRepository.update({
+      ethAddress: ethAddress
+    }, {
+      initPower: data.prices.map(value => value.amount),
+      initPrice: data.prices.map(value => value.price)
+    })
   }
 
   async sendNewTransactionsToMQTT() {
