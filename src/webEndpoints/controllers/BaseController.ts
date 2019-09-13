@@ -45,7 +45,7 @@ export class BaseController {
     router.get(`${namespace}/admin/consumption`, this.getAdminConsumptions.bind(this))
     router.get(`${namespace}/admin/production`, this.getAdminProductions.bind(this))
     router.get(`${namespace}/admin/anchor`, this.getAdminAnchors.bind(this))
-    router.post(`${namespace}/login`, koaBody(), this.postLogin.bind(this))
+    // router.post(`${namespace}/login`, koaBody(), this.postLogin.bind(this))
     router.get(`${namespace}/admin/excel/energy`, this.getAdminExcelEnergy.bind(this))
     router.get(`${namespace}/admin/excel/transaction`, this.getAdminExcelTransaction.bind(this))
     router.post(`${namespace}/margin`, koaBody(), this.postUserMargin.bind(this))
@@ -56,7 +56,7 @@ export class BaseController {
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
     router.get(`${namespace}/excel/energy`, this.getUserExcelEnergy.bind(this))
     router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
-    router.post(`${namespace}/auth/login`,koaBody(), this.login.bind(this));
+    router.post(`${namespace}/login`,koaBody(), this.login.bind(this));
     router.post(`${namespace}/newuser`,koaBody(), this.newUser.bind(this));
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
     //router.post("/new/user",koaBody(), UserController.newUser);
