@@ -3,6 +3,11 @@ import * as fs from 'fs';
 import * as cron from 'node-cron'
 import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/NodeDatabase";
+import * as jwt from "jsonwebtoken";
+import { getRepository } from "typeorm";
+import { validate } from "class-validator";
+import { User } from "../../database/models/User";
+import config from "../../config/config";
 
 export class BaseController {
   public readonly db: NodeDatabase
@@ -51,25 +56,12 @@ export class BaseController {
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
     router.get(`${namespace}/excel/energy`, this.getUserExcelEnergy.bind(this))
     router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
+    router.post(`${namespace}/auth/login`,koaBody(), this.login.bind(this));
+    router.post(`${namespace}/newuser`,koaBody(), this.newUser.bind(this));
+    router.get(`${namespace}/alluser`, this.listAll.bind(this))
+    //router.post("/new/user",koaBody(), UserController.newUser);
+
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-
-
-      // pool.proxy()
-      //     .then((worker: any) => {
-      //       return worker.asyncAdd(3, 4.1);
-      //     })
-      //     .then((result: any) => {
-      //       console.log(result);
-      //     })
-      //     .catch((err: any) => {
-      //       console.error(err);
-      //     })
-      //     .then(() => {
-      //       pool.terminate(); // terminate all workers when done
-      //     });
-
-
-//  publishProgress(enode: number,contractID: number,amount: number, seller: string, contragent: string,delta: number)
       const mqtt = new mqtt_cl.ClientMQTT()
       mqtt.add_handler(this.handler)
       mqtt.start()
@@ -220,5 +212,114 @@ export class BaseController {
 
   }
 
+  async login(ctx: Router.IRouterContext){
+    try {
+      // const body = JSON.parse( as string)
+      console.log(ctx.request.body.email);
+    } catch (e) {
+      console.log(e);
+    }
+    //Check if email and password are set
+    let email = ctx.request.body.email
+    let password = ctx.request.body.password
+    if (!(email && password)) {
+        ctx.response.status = 400
+    }
+
+    //Get user from database
+    const userRepository = getRepository(User);
+    let user: User | undefined;
+
+      try {
+        user = await userRepository.findOneOrFail({ where: { email } });
+      } catch (error) {
+          ctx.response.status = 401
+      }
+      if(user != undefined && user.password==password) {
+      //Sing JWT, valid for 1 hour
+        const token = jwt.sign(
+          { userId: user.id, email: user.email },
+          config.jwtSecret,
+          { expiresIn: "10m" }
+        );
+
+
+        //Try to validate the token and get data
+
+
+        //Send the jwt in the response
+      ctx.response.body = token
+    }
+
+  };
+
+
+  async newUser(ctx: Router.IRouterContext){
+    //Get parameters from the body
+    let email = ctx.request.body.email
+    let password = ctx.request.body.password
+    if (!(email && password)) {
+        ctx.response.status = 400
+    }
+    let user = new User();
+    user.email = email;
+    user.password = password;
+
+    //Validade if the parameters are ok
+    const errors = await validate(user);
+    if (errors.length > 0) {
+          ctx.response.status = 400
+      return;
+    }
+
+    //Try to save. If fails, the email is already in use
+    const userRepository = getRepository(User);
+    try {
+      await userRepository.save(user);
+    } catch (e) {
+          ctx.response.status = 409
+      return;
+    }
+
+    //If all ok, send 201 response
+          ctx.response.status = 201
+  };
+
+  async listAll(ctx: Router.IRouterContext){
+
+    check(ctx)
+
+    // const { userId, username } = jwtPayload;
+    // const newToken = jwt.sign({ userId, username }, config.jwtSecret, {
+    //   expiresIn: "1h"
+    //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExLCJlbWFpbCI6InJ1c2xhbndlZiIsImlhdCI6MTU2ODMzODE3MSwiZXhwIjoxNTY4MzQxNzcxfQ.RCoaFQe4VXRoMq0zO-oc9cY3jAE-o8hlKrGpe1S7rwg
+    // ctx.response.setHeader("token", newToken);
+    //Get users from database
+    const userRepository = getRepository(User);
+    const users = await userRepository.find({
+      select: ["id", "email", "password"] //We dont want to send the passwords on response
+    });
+
+    //Send the users object
+    ctx.response.body = users
+  }
+
 
 }
+
+  function check(ctx: Router.IRouterContext) {
+    const token = <string>ctx.request.headers["auth"];
+    let jwtPayload;
+
+    //Try to validate the token and get data
+    try {
+      jwtPayload = <any>jwt.verify(token, config.jwtSecret);
+      //ctx.res.locals.jwtPayload = jwtPayload;
+      console.log(token)
+    } catch (error) {
+      //If token is not valid, respond with 401 (unauthorized)
+    ctx.response.status = 401
+      return;
+    }
+
+  }
