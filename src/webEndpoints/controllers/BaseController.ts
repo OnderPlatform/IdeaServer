@@ -83,7 +83,7 @@ export class BaseController {
   }
 
   setCorsHeaders(ctx: Router.IRouterContext) {
-    ctx.response.set('Access-Control-Allow-Origin', '*')
+    //ctx.response.set('Access-Control-Allow-Origin', '*')
     ctx.response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
     ctx.response.set('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS')
     ctx.response.status = 200
@@ -101,38 +101,50 @@ export class BaseController {
 
   async getAdminTransactions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
     ctx.response.body = await this.db.service.adminTransactions()
     ctx.response.status = 200
   }
 
   async getAdminConsumptions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if(ctx.response.status == 401) {
+      return
+    }
     ctx.response.body = await this.db.service.adminConsumptions()
     ctx.response.status = 200
   }
 
   async getAdminProductions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if(ctx.response.status == 401) {
+      return
+    }
     ctx.response.body = await this.db.service.adminProductions()
     ctx.response.status = 200
   }
 
-  async postLogin(ctx: Router.IRouterContext) {
-    try {
-      const body = JSON.parse(ctx.request.body as string)
-      if (body) {
-        if (await this.db.service.authorization(body)) {
-          ctx.response.status = 202
-        } else {
-          ctx.response.status = 401
-        }
-      } else {
-        ctx.response.status = 400
-      }
-    } catch (e) {
-      console.log('Error while auth. Error message: ', e);
-    }
-  }
+  // async postLogin(ctx: Router.IRouterContext) {
+  //   try {
+  //     const body = JSON.parse(ctx.request.body as string)
+  //     if (body) {
+  //         if (await this.db.service.authorization(body)) {
+  //           ctx.response.status = 202
+  //         } else {
+  //           ctx.response.status = 401
+  //         }
+  //     } else {
+  //       ctx.response.status = 400
+  //     }
+  //   } catch (e) {
+  //     console.log('Error while auth. Error message: ', e);
+  //   }
+  // }
 
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
@@ -146,11 +158,20 @@ export class BaseController {
 
   async getAdminAnchors(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
     ctx.response.body = await this.db.service.adminAnchor()
     ctx.response.status = 200
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     try {
       const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
       const body = JSON.parse(ctx.request.body as string)
@@ -162,6 +183,10 @@ export class BaseController {
   }
 
   async getUserConsumptions(ctx: Router.IRouterContext) {
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
     this.setCorsHeaders(ctx)
     try {
       const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
@@ -170,6 +195,9 @@ export class BaseController {
     } catch (e) {
       console.log(e);
     }
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userConsumption(who)
+    ctx.response.status = 200
   }
 
   async getUserProductions(ctx: Router.IRouterContext) {
@@ -183,6 +211,13 @@ export class BaseController {
     }
 
 
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userProduction(who)
+    ctx.response.status = 200
   }
 
   async getUserTransactions(ctx: Router.IRouterContext) {
@@ -194,6 +229,13 @@ export class BaseController {
     } catch (e) {
       console.log(e);
     }
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userTransactions(who)
+    ctx.response.status = 200
   }
 
   async getUserAnchors(ctx: Router.IRouterContext) {
@@ -205,6 +247,13 @@ export class BaseController {
     } catch (e) {
       console.log(e);
     }
+        check(ctx)
+        if(ctx.response.status == 401) {
+          return
+        }
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    ctx.response.body = await this.db.service.userAnchor(who)
+    ctx.response.status = 200
   }
 
   async getUserExcelEnergy(ctx: Router.IRouterContext) {
@@ -230,6 +279,11 @@ export class BaseController {
   }
 
   async postUserPrice(ctx: Router.IRouterContext) {
+    check(ctx)
+    if(ctx.response.status == 401) {
+      return
+    }
+    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     try {
       const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
       const body = JSON.parse(ctx.request.body as string)
@@ -319,7 +373,9 @@ export class BaseController {
   async listAll(ctx: Router.IRouterContext) {
 
     check(ctx)
-
+    if(ctx.response.status == 401) {
+      return
+    }
     // const { userId, username } = jwtPayload;
     // const newToken = jwt.sign({ userId, username }, config.jwtSecret, {
     //   expiresIn: "1h"
