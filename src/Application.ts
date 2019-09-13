@@ -28,7 +28,7 @@ export default class Application {
     await this.db.initConnection()
     await this.db.service.initMockData()
     await this.db.service.fetchDataFromAMIGO()
-    const t = await this.db.service.userTransactions('0xc29b08e2ca18a000000000000')
-    console.log(t);
+    // const t = await this.db.service.userTransactions('0xc29b08e2ca18a000000000000')
+    // console.log(t);
   }
 }

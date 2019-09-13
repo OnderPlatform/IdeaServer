@@ -27,6 +27,12 @@ export interface DataFromAMIGO {
   prosumers: Array<ProsumerData>
 }
 
+export interface AMIGOProsumer {
+  mrid: string
+  name: string
+  cimID: number
+}
+
 // Interface related to UI
 export interface DataFromUI {
   initEnergy: number,

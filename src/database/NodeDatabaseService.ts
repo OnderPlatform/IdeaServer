@@ -4,8 +4,8 @@ import { getCustomRepository, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
-import { initialMockData } from "../mockData/config";
-import fetchDataFromAMIGO from "../mockData/fetchDataFromAMIGO";
+import { EthAddresses, EthAddressesProsumers, initialMockData } from "../mockData/config";
+
 import {
   AdminAnchor,
   AdminConsumptions,
@@ -15,10 +15,12 @@ import {
   HashingInfo, UserAnchor,
   UserConsumption,
   Authorization,
-  UserMargin, UserPrices, UserProduction, UserTransactions
+  UserMargin, UserPrices, UserProduction, UserTransactions, AMIGOProsumer
 } from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
 import { AnchorRepository } from "./repositories/AnchorRepository";
+import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
+import axios from 'axios'
 
 export class NodeDatabaseService {
   private readonly db: NodeDatabase
@@ -92,14 +94,32 @@ export class NodeDatabaseService {
     console.log('Mock data initialization ended.');
   }
 
-  fetchDataFromAMIGO() {
-    setInterval(async () => {
-      await fetchDataFromAMIGO('http:/127.0.0.1')
-        .then(value => {
-          this.handleDataFromAMIGO(value)
-        })
-      this.sendNewTransactionsToMQTT()
-    }, 2000)
+  async fetchDataFromAMIGO() {
+    // setInterval(async () => {
+    //   await fetchDataFromAMIGO('http:/127.0.0.1')
+    //     .then(value => {
+    //       this.handleDataFromAMIGO(value)
+    //     })
+    //   this.sendNewTransactionsToMQTT()
+    // }, 2000)
+    const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit`, {
+      auth: {
+        username: LOGIN,
+        password: PASSWORD
+      }
+    })
+    const prosumers: AMIGOProsumer[] = response.data
+    await Promise.all(prosumers.map(async (value, index) => {
+
+      await this.cellRepository.save({
+        name: value.name,
+        ethAddress: EthAddressesProsumers[index],
+        type: 'prosumer',
+        margin: 5,
+        opCoef: 3,
+        balance: 999 //todo: где доставать баланс?
+      })
+    }))
   }
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {

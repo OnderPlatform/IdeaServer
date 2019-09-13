@@ -6,11 +6,31 @@ export const EthAddresses: string[] = [
   "0x83153e05ec0ac000000000000",
   "0xeb23446d73299000000000000",
   "0x58329c37e6f25000000000000",
+]
+
+export const EthAddressesConsumers: string[] = [
+  "0x9e1ff83131ce3000000000000",
+  "0xb5d6dc6462065000000000000",
+  "0x83153e05ec0ac000000000000",
+  "0xeb23446d73299000000000000",
+  "0x58329c37e6f25000000000000",
+]
+
+export const EthAddressesProsumers: string[] = [
   "0xe57e8d9185dfe000000000000",
   "0x6e4594e52e142000000000000",
   "0x17e0711cdb939000000000000",
   "0xc29b08e2ca18a000000000000",
-  "0xbc33473ec8ff3000000000000",
+  "0xbc33473ec8ff3000000000001",
+  "0xbc33473ec8ff3000000000002",
+]
+
+export const EthAddressesProducers: string[] = [
+  "0xbc33473ec8ff3000000000003",
+  "0xbc33473ec8ff3000000000004",
+  "0xbc33473ec8ff3000000000005",
+  "0xbc33473ec8ff3000000000006",
+  "0xbc33473ec8ff3000000000007",
 ]
 
 // for (let i = 0; i < amountOfEthAddresses; i++) {
