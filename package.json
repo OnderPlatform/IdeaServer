@@ -6,7 +6,8 @@
   "scripts": {
     "build": "rm -rf ./dist/ && tsc --project tsconfig.json",
     "lint": "tslint --format stylish --project . --exclude './node_modules/**/*.ts'",
-    "start": "node ./dist/bin/main.js"
+    "start": "node ./dist/bin/main.js",
+    "rerun": "yarn build; yarn start"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.2",

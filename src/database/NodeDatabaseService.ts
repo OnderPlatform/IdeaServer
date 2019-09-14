@@ -4,18 +4,23 @@ import { getCustomRepository, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
-import { EthAddresses, EthAddressesProsumers, initialMockData } from "../mockData/config";
+import { EthAddressesProsumers, initialMockData } from "../mockData/config";
 
 import {
   AdminAnchor,
   AdminConsumptions,
   AdminProductions,
   AdminTransactions,
-  DataFromAMIGO,
-  HashingInfo, UserAnchor,
-  UserConsumption,
+  AMIGOProsumer,
   Authorization,
-  UserMargin, UserPrices, UserProduction, UserTransactions, AMIGOProsumer
+  DataFromAMIGO,
+  HashingInfo,
+  UserAnchor,
+  UserConsumption,
+  UserMargin,
+  UserPrices,
+  UserProduction,
+  UserTransactions
 } from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
 import { AnchorRepository } from "./repositories/AnchorRepository";
@@ -1037,12 +1042,13 @@ export class NodeDatabaseService {
     })
   }
 
-  async userConsumption(cellEthAddress: string): Promise<UserConsumption> {
+  async userConsumption(cellEthAddress: string): Promise<UserConsumption | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
       }
     })
+
     const userTradeTable = await this.tradeRepository.find({
       where: {
         type: 'consumer',
@@ -1050,6 +1056,14 @@ export class NodeDatabaseService {
       },
       relations: ['cell']
     })
+
+
+    if (!userTradeTable.length) {
+      return {
+
+      }
+    }
+
     const userTradeTable1Day = await this.tradeRepository.find({
       where: {
         type: 'consumer',
@@ -1064,6 +1078,7 @@ export class NodeDatabaseService {
         time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
       }
     })
+
 
     if (!userTradeTable[0].energy)
       throw new Error('user trade table seems to be empty')
@@ -1081,8 +1096,7 @@ export class NodeDatabaseService {
       if (!currentValue.energy)
         throw new Error('energy is null')
       return currentValue.energy + previousValue
-    }, 0)/userTradeTable.length
-
+    }, 0) / userTradeTable.length
 
     if (!userTradeTable[0].price)
       throw new Error('user trade table seems to be empty')
@@ -1157,7 +1171,7 @@ export class NodeDatabaseService {
     }
   }
 
-  async userProduction(cellEthAddress: string): Promise<UserProduction> {
+  async userProduction(cellEthAddress: string): Promise<UserProduction | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -1165,21 +1179,27 @@ export class NodeDatabaseService {
     })
     const userTradeTable = await this.tradeRepository.find({
       where: {
-        type: 'consumer',
+        type: 'producer',
         cell: userCell
       },
       relations: ['cell']
     })
+    if (!userTradeTable.length) {
+      return {
+
+      }
+    }
+
     const userTradeTable1Day = await this.tradeRepository.find({
       where: {
-        type: 'consumer',
+        type: 'producer',
         cell: userCell,
         time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
       }
     })
     const userTradeTable30Day = await this.tradeRepository.find({
       where: {
-        type: 'consumer',
+        type: 'producer',
         cell: userCell,
         time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
       }
@@ -1277,7 +1297,7 @@ export class NodeDatabaseService {
     }
   }
 
-  async userTransactions(cellEthAddress: string): Promise<UserTransactions> {
+  async userTransactions(cellEthAddress: string): Promise<UserTransactions | {}> {
     const myCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -1287,6 +1307,12 @@ export class NodeDatabaseService {
       where: `"fromId" = ${myCell.id} or "toId" = ${myCell.id};`,
       relations: ['from', 'to']
     })
+
+    if (!transactions.length) {
+      return {
+
+      }
+    }
 
     return {
       transaction: transactions.map(value => {
@@ -1302,7 +1328,7 @@ export class NodeDatabaseService {
     }
   }
 
-  async userAnchor(ethAddress: string): Promise<UserAnchor> {
+  async userAnchor(ethAddress: string): Promise<UserAnchor | {}> {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: ethAddress
@@ -1318,6 +1344,12 @@ export class NodeDatabaseService {
         user: user
       }
     })
+
+    if (!userAnchors.length) {
+      return {
+
+      }
+    }
 
     return {
       anchors: userAnchors.map(value => {

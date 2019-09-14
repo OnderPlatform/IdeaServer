@@ -15,4 +15,7 @@ export class User extends BaseEntity {
   @OneToOne(type => Cell)
   @JoinColumn()
   cell!: Cell
+
+  @Column({default: false})
+  isAdmin!: boolean
 }

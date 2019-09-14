@@ -101,10 +101,10 @@ export class BaseController {
 
   async getAdminTransactions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     ctx.response.body = await this.db.service.adminTransactions()
     ctx.response.status = 200
   }
@@ -112,7 +112,7 @@ export class BaseController {
   async getAdminConsumptions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     check(ctx)
-    if(ctx.response.status == 401) {
+    if (ctx.response.status == 401) {
       return
     }
     ctx.response.body = await this.db.service.adminConsumptions()
@@ -122,7 +122,7 @@ export class BaseController {
   async getAdminProductions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     check(ctx)
-    if(ctx.response.status == 401) {
+    if (ctx.response.status == 401) {
       return
     }
     ctx.response.body = await this.db.service.adminProductions()
@@ -158,22 +158,21 @@ export class BaseController {
 
   async getAdminAnchors(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     ctx.response.body = await this.db.service.adminAnchor()
     ctx.response.status = 200
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
-    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.userMargin(body.margin, who)
       ctx.response.status = 201
@@ -183,83 +182,145 @@ export class BaseController {
   }
 
   async getUserConsumptions(ctx: Router.IRouterContext) {
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
-      ctx.response.body = await this.db.service.userConsumption(who)
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+
+      if (isAdmin) {
+        const params = new URLSearchParams(ctx.request.querystring)
+        const discoveringuser = params.get('ethId')
+        if (discoveringuser) {
+          ctx.response.body = await this.db.service.userConsumption(discoveringuser)
+        } else {
+          ctx.response.body = await this.db.service.adminConsumptions()
+        }
+      }
+      else {
+        ctx.response.body = await this.db.service.userConsumption(who)
+      }
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
     }
-    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
-    ctx.response.body = await this.db.service.userConsumption(who)
-    ctx.response.status = 200
   }
 
   async getUserProductions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
-      ctx.response.body = await this.db.service.userProduction(who)
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+      if (isAdmin) {
+        const params = new URLSearchParams(ctx.request.querystring)
+        const discoveringuser = params.get('ethId')
+        if (discoveringuser) {
+          ctx.response.body = await this.db.service.userProduction(discoveringuser)
+        } else {
+          ctx.response.body = await this.db.service.adminProductions()
+        }
+      } else {
+        ctx.response.body = await this.db.service.userProduction(who)
+      }
+
+
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
     }
-
-
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
-    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
-    ctx.response.body = await this.db.service.userProduction(who)
-    ctx.response.status = 200
   }
 
   async getUserTransactions(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
-      ctx.response.body = await this.db.service.userTransactions(who)
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+      if (isAdmin) {
+        const params = new URLSearchParams(ctx.request.querystring)
+        const discoveringuser = params.get('ethId')
+        if (discoveringuser) {
+          ctx.response.body = await this.db.service.userTransactions(discoveringuser)
+        } else {
+          ctx.response.body = await this.db.service.adminTransactions()
+        }
+      } else {
+        ctx.response.body = await this.db.service.userTransactions(who)
+      }
+
+
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
     }
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
-    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
-    ctx.response.body = await this.db.service.userTransactions(who)
-    ctx.response.status = 200
   }
 
   async getUserAnchors(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
-      ctx.response.body = await this.db.service.userAnchor(who)
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+      if (isAdmin) {
+        const params = new URLSearchParams(ctx.request.querystring)
+        const discoveringuser = params.get('ethId')
+        if (discoveringuser) {
+          ctx.response.body = await this.db.service.userAnchor(discoveringuser)
+        } else {
+          ctx.response.body = await this.db.service.adminAnchor()
+        }
+      } else {
+        ctx.response.body = await this.db.service.userAnchor(who)
+      }
+
+
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
     }
-        check(ctx)
-        if(ctx.response.status == 401) {
-          return
-        }
-    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
-    ctx.response.body = await this.db.service.userAnchor(who)
-    ctx.response.status = 200
   }
 
   async getUserExcelEnergy(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       ctx.response.status = 501
     } catch (e) {
       console.log(e);
@@ -269,8 +330,12 @@ export class BaseController {
 
   async getUserExcelTransaction(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       ctx.response.status = 501
     } catch (e) {
       console.log(e);
@@ -279,13 +344,13 @@ export class BaseController {
   }
 
   async postUserPrice(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     check(ctx)
-    if(ctx.response.status == 401) {
+    if (ctx.response.status == 401) {
       return
     }
-    const who = '0xc29b08e2ca18a000000000000' //todo: find out who is it
     try {
-      const who = await this.findEthAddressByEmail(ctx.request.headers['From'])
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.postPrices(body, who)
       ctx.response.status = 201
@@ -296,6 +361,7 @@ export class BaseController {
   }
 
   async login(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     try {
       // const body = JSON.parse( as string)
       console.log(ctx.request.body.email);
@@ -331,11 +397,8 @@ export class BaseController {
 
 
       //Send the jwt in the response
-      ctx.response.set("Set-Cookie", `"authToken"=${token}`)
       ctx.response.body = token
-      console.log('auth token: ', ctx.cookies.get('authToken'))
     }
-
   };
 
 
@@ -373,7 +436,7 @@ export class BaseController {
   async listAll(ctx: Router.IRouterContext) {
 
     check(ctx)
-    if(ctx.response.status == 401) {
+    if (ctx.response.status == 401) {
       return
     }
     // const { userId, username } = jwtPayload;
