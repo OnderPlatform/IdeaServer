@@ -5,20 +5,42 @@ export interface ProducerData {
   time: Date,
   energy: number,
   power: number,
-  producerId: string
+  producerEthAddress: string
 }
 
 export interface ConsumerData {
   time: Date,
   energy: number,
-  consumerId: string
+  consumerEthAddress: string
 }
 
 export interface ProsumerData {
   time: Date,
   energyIn: number,
   energyOut: number,
-  prosumerId: string
+  prosumerEthAddress: string
+}
+
+export interface CellRealData {
+  "timeStamp": string,
+  "measurementValueQuality": {
+    "validity": string,
+    "source": string
+  },
+  "value": number
+}
+
+export interface Cell {
+  name: string
+  ethAddress: string
+  mrid: string
+}
+
+
+export interface InitDataFromAMIGO {
+  producers: Array<Cell>
+  consumers: Array<Cell>
+  prosumers: Array<Cell>
 }
 
 export interface DataFromAMIGO {
@@ -27,7 +49,7 @@ export interface DataFromAMIGO {
   prosumers: Array<ProsumerData>
 }
 
-export interface AMIGOProsumer {
+export interface AMIGOCell {
   mrid: string
   name: string
   cimID: number

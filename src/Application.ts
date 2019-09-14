@@ -26,7 +26,12 @@ export default class Application {
   async start (): Promise<void> {
     await this.web.start()
     await this.db.initConnection()
-    await this.db.service.initMockData()
+    // await this.db.service.initMockData()
+    const tmp = await this.db.service.cellRepository.find()
+    if (!tmp.length) {
+      await this.db.service.fetchInitialDataFromAMIGO()
+      await this.db.service.initialDataForOperator()
+    }
     await this.db.service.fetchDataFromAMIGO()
     // const t = await this.db.service.userTransactions('0xc29b08e2ca18a000000000000')
     // console.log(t);

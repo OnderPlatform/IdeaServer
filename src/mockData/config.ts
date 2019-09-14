@@ -14,6 +14,13 @@ export const EthAddressesConsumers: string[] = [
   "0x83153e05ec0ac000000000000",
   "0xeb23446d73299000000000000",
   "0x58329c37e6f25000000000000",
+  "0x58329c37e6f25000000000001",
+  "0x58329c37e6f25000000000002",
+  "0x58329c37e6f25000000000003",
+  "0x58329c37e6f25000000000004",
+  "0x58329c37e6f25000000000005",
+  "0x58329c37e6f25000000000006",
+  "0x58329c37e6f25000000000007",
 ]
 
 export const EthAddressesProsumers: string[] = [
@@ -23,6 +30,15 @@ export const EthAddressesProsumers: string[] = [
   "0xc29b08e2ca18a000000000000",
   "0xbc33473ec8ff3000000000001",
   "0xbc33473ec8ff3000000000002",
+  "0xbc33473ec8ff3000000000003",
+  "0xbc33473ec8ff3000000000004",
+  "0xbc33473ec8ff3000000000005",
+  "0xbc33473ec8ff3000000000006",
+  "0xbc33473ec8ff3000000000007",
+  "0xbc33473ec8ff3000000000008",
+  "0xbc33473ec8ff3000000000009",
+  "0xbc33473ec8ff3000000000010",
+  "0xbc33473ec8ff3000000000011",
 ]
 
 export const EthAddressesProducers: string[] = [
@@ -32,6 +48,8 @@ export const EthAddressesProducers: string[] = [
   "0xbc33473ec8ff3000000000006",
   "0xbc33473ec8ff3000000000007",
 ]
+
+export const EthAddressOperator = '0xbc33473ec8ff3000000000008'
 
 // for (let i = 0; i < amountOfEthAddresses; i++) {
 //   const tmp: string = Math.round(Math.random() * MAX).toString(16)

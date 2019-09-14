@@ -5,7 +5,7 @@ export class Cell extends BaseEntity {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @Column()
+  @Column({unique: true})
   ethAddress!: string
 
   @Column()
@@ -28,4 +28,7 @@ export class Cell extends BaseEntity {
 
   @Column({type: 'real', nullable: true})
   opCoef?: number
+
+  @Column({unique: true})
+  mrid!: string
 }

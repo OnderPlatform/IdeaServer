@@ -8,41 +8,41 @@ const mockData: DataFromAMIGO = {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 120.3,
       power: 7.4,
-      producerId: EthAddresses[0]
+      producerEthAddress: EthAddresses[0]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 192.3,
       power: 3.4,
-      producerId: EthAddresses[1]
+      producerEthAddress: EthAddresses[1]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 212.3,
       power: 13.4,
-      producerId: EthAddresses[2]
+      producerEthAddress: EthAddresses[2]
     }
   ],
   consumers: [
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 9.0,
-      consumerId: EthAddresses[3]
+      consumerEthAddress: EthAddresses[3]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 12.0,
-      consumerId: EthAddresses[4]
+      consumerEthAddress: EthAddresses[4]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 15.0,
-      consumerId: EthAddresses[5]
+      consumerEthAddress: EthAddresses[5]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energy: 19.0,
-      consumerId: EthAddresses[6]
+      consumerEthAddress: EthAddresses[6]
     }
   ],
   prosumers: [
@@ -50,13 +50,13 @@ const mockData: DataFromAMIGO = {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energyIn: 7.0,
       energyOut: 9.0,
-      prosumerId: EthAddresses[7]
+      prosumerEthAddress: EthAddresses[7]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energyIn: 10.0,
       energyOut: 9.0,
-      prosumerId: EthAddresses[8]
+      prosumerEthAddress: EthAddresses[8]
     }
   ]
 }

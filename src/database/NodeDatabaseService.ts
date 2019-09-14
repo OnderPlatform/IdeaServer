@@ -4,28 +4,41 @@ import { getCustomRepository, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
-import { EthAddressesProsumers, initialMockData } from "../mockData/config";
+import {
+  EthAddressOperator,
+  EthAddressesConsumers,
+  EthAddressesProducers,
+  EthAddressesProsumers,
+  initialMockData
+} from "../mockData/config";
 
 import {
   AdminAnchor,
   AdminConsumptions,
   AdminProductions,
   AdminTransactions,
-  AMIGOProsumer,
+  AMIGOCell,
   Authorization,
   DataFromAMIGO,
-  HashingInfo,
+  HashingInfo, InitDataFromAMIGO, ProsumerData, CellRealData,
   UserAnchor,
   UserConsumption,
   UserMargin,
   UserPrices,
   UserProduction,
-  UserTransactions
+  UserTransactions, ConsumerData, ProducerData
 } from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
 import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
+
+const eps = 0.1
+const DEFAULT_BALANCE = 999
+const DEFAULT_MARGIN = 5
+const DEFAULT_OPCOEF = 4
+const DEFAULT_INITPRICE = [0., 50., 100]
+const DEFAULT_INITPOWER = [0., 50., 100]
 
 export class NodeDatabaseService {
   private readonly db: NodeDatabase
@@ -100,31 +113,210 @@ export class NodeDatabaseService {
   }
 
   async fetchDataFromAMIGO() {
+    const prosumers = await this.cellRepository.find({
+      where: {
+        type: 'prosumer'
+      }
+    })
+    const consumers = await this.cellRepository.find({
+      where: {
+        type: 'consumer'
+      }
+    })
+    const producers = await this.cellRepository.find({
+      where: {
+        type: 'producer'
+      }
+    })
+
+    const prosumerPreparedDatas = await Promise.all(prosumers.map(value => value.mrid).map(async value => {
+      const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
+        auth: {
+          username: LOGIN,
+          password: PASSWORD
+        }
+      })
+      const prosumerData: CellRealData[] = response.data
+      const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
+      const energyOut = prosumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value + (currentValue.value > 0 ? 1 : 0), 0)
+      const prosumerEntry = await this.cellRepository.findOneOrFail({
+        where: {
+          mrid: value
+        }
+      })
+      const prosumerPreparedData: ProsumerData = {
+        time: new Date(Date.now()),
+        prosumerEthAddress: prosumerEntry.ethAddress,
+        energyIn: energyIn*60,
+        energyOut: energyOut*60
+      }
+
+      return prosumerPreparedData
+    }))
+
+    const consumerPreparedDatas = await Promise.all(consumers.map(value => value.mrid).map(async value => {
+      const response = await axios.get(`${AMIGO_SERVER}/api/energyConsumer/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
+        auth: {
+          username: LOGIN,
+          password: PASSWORD
+        }
+      })
+      const consumerData: CellRealData[] = response.data
+      const energy = consumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value, 0)
+      const consumerEntry = await this.cellRepository.findOneOrFail({
+        where: {
+          mrid: value
+        }
+      })
+
+      const consumerPreparedData: ConsumerData = {
+        time: new Date(Date.now()),
+        energy: energy*60,
+        consumerEthAddress: consumerEntry.ethAddress
+      }
+
+      return consumerPreparedData
+    }))
+
+    const producerPreparedDatas = await Promise.all(producers.map(value => value.mrid).map(async value => {
+      const response = await axios.get(`${AMIGO_SERVER}/api/generatingUnit/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
+        auth: {
+          username: LOGIN,
+          password: PASSWORD
+        }
+      })
+      const producerData: CellRealData[] = response.data
+      const energy = producerData.reduce((previousValue, currentValue) => previousValue + currentValue.value, 0)
+      const producerEntry = await this.cellRepository.findOneOrFail({
+        where: {
+          mrid: value
+        }
+      })
+
+      const power = 0 //todo: where should we take the power?
+      const producerPreparedData: ProducerData = {
+        power: power,
+        energy: energy*60,
+        time: new Date(Date.now()),
+        producerEthAddress: producerEntry.ethAddress
+      }
+
+      return producerPreparedData
+    }))
+
+
+    this.handleDataFromAMIGO({
+      prosumers: prosumerPreparedDatas.filter(value => Math.abs(value.energyIn - value.energyOut) >= eps),
+      producers: producerPreparedDatas.filter(value => value.energy > eps),
+      consumers: consumerPreparedDatas.filter(value => value.energy > eps)
+    })
+  }
+
+  async initialDataForOperator() {
+    await this.cellRepository.insert({
+      ethAddress: EthAddressOperator,
+      mrid: '_operator',
+      name: 'Operator',
+      balance: DEFAULT_BALANCE,
+      opCoef: DEFAULT_OPCOEF,
+      type: 'operator'
+    })
+  }
+
+  async fetchInitialDataFromAMIGO() {
     // setInterval(async () => {
-    //   await fetchDataFromAMIGO('http:/127.0.0.1')
+    //   await fetchInitialDataFromAMIGO('http:/127.0.0.1')
     //     .then(value => {
     //       this.handleDataFromAMIGO(value)
     //     })
     //   this.sendNewTransactionsToMQTT()
     // }, 2000)
-    const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit`, {
+    const prosumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit`, {
       auth: {
         username: LOGIN,
         password: PASSWORD
       }
     })
-    const prosumers: AMIGOProsumer[] = response.data
-    await Promise.all(prosumers.map(async (value, index) => {
+    const consumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyConsumer`, {
+      auth: {
+        username: LOGIN,
+        password: PASSWORD
+      }
+    })
+    const producersResponse = await axios.get(`${AMIGO_SERVER}/api/generatingUnit`, {
+      auth: {
+        username: LOGIN,
+        password: PASSWORD
+      }
+    })
+    // console.log('prosumersResponse: ', prosumersResponse.data);
+    // console.log('consumersResponse: ', consumersResponse.data);
+    // console.log('producersResponse: ', producersResponse.data);
 
-      await this.cellRepository.save({
+    const prosumers: AMIGOCell[] = prosumersResponse.data
+    const consumers: AMIGOCell[] = consumersResponse.data
+    const producers: AMIGOCell[] = producersResponse.data
+
+    this.handleInitDataFromAMIGO({
+      prosumers: prosumers.map((value, index) => {
+        return {
+          name: value.name,
+          ethAddress: EthAddressesProsumers[index],
+          mrid: value.mrid
+        }
+      }),
+      producers: producers.map((value, index) => {
+        return {
+          name: value.name,
+          ethAddress: EthAddressesProducers[index],
+          mrid: value.mrid
+        }
+      }),
+      consumers: consumers.map((value, index) => {
+        return {
+          name: value.name,
+          ethAddress: EthAddressesConsumers[index],
+          mrid: value.mrid
+        }
+      })
+    })
+  }
+
+
+  async handleInitDataFromAMIGO(data: InitDataFromAMIGO) {
+    await Promise.all(data.consumers.map(async value => {
+      await this.cellRepository.insert({
+        ethAddress: value.ethAddress,
+        type: 'consumer',
         name: value.name,
-        ethAddress: EthAddressesProsumers[index],
-        type: 'prosumer',
-        margin: 5,
-        opCoef: 3,
-        balance: 999 //todo: где доставать баланс?
+        balance: DEFAULT_BALANCE,
+        mrid: value.mrid
       })
     }))
+
+    await Promise.all(data.producers.map(async value => {
+      await this.cellRepository.insert({
+        name: value.name,
+        ethAddress: value.ethAddress,
+        type: 'producer',
+        initPower: DEFAULT_INITPOWER,
+        initPrice: DEFAULT_INITPRICE,
+        balance: DEFAULT_BALANCE,
+        mrid: value.mrid
+      })
+    }))
+
+    await Promise.all(data.prosumers.map(async value => {
+      await this.cellRepository.insert({
+        name: value.name,
+        type: 'prosumer',
+        ethAddress: value.ethAddress,
+        margin: DEFAULT_MARGIN,
+        balance: DEFAULT_BALANCE,
+        mrid: value.mrid
+      })
+    }))
+
   }
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {
@@ -134,7 +326,7 @@ export class NodeDatabaseService {
     await Promise.all(data.producers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.producerId
+          ethAddress: value.producerEthAddress
         }
       })
       await this.tradeRepository.insert({
@@ -148,7 +340,7 @@ export class NodeDatabaseService {
     await Promise.all(data.consumers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.consumerId
+          ethAddress: value.consumerEthAddress
         }
       })
 
@@ -162,7 +354,7 @@ export class NodeDatabaseService {
     await Promise.all(data.prosumers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.prosumerId
+          ethAddress: value.prosumerEthAddress
         }
       })
 
@@ -189,7 +381,7 @@ export class NodeDatabaseService {
     await Promise.all(data.prosumers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.prosumerId
+          ethAddress: value.prosumerEthAddress
         }
       })
       const lastProsumerCell = await this.tradeRepository.findOneOrFail({
@@ -228,7 +420,7 @@ export class NodeDatabaseService {
     await Promise.all(data.producers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.producerId
+          ethAddress: value.producerEthAddress
         }
       })
       const lastProducerEntry = await this.tradeRepository.findOneOrFail({
@@ -266,7 +458,7 @@ export class NodeDatabaseService {
       // Finding prosumer cell in database
       const cell = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.prosumerId
+          ethAddress: value.prosumerEthAddress
         }
       })
       // Finding last entry in trade table
@@ -378,7 +570,7 @@ export class NodeDatabaseService {
     await Promise.all(data.consumers.map(async value => {
       // Finding consumer cell
       const cell = await this.cellRepository.findOneOrFail({
-        ethAddress: value.consumerId
+        ethAddress: value.consumerEthAddress
       })
 
       // Finding last entry in trade table
@@ -447,7 +639,7 @@ export class NodeDatabaseService {
       for (let j = 0; j < data.producers.length; j++) {
         const consumer = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.consumers[i].consumerId
+            ethAddress: data.consumers[i].consumerEthAddress
           }
         })
         const consumerTrade = await this.tradeRepository.findOneOrFail({
@@ -460,7 +652,7 @@ export class NodeDatabaseService {
         })
         const producer = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.producers[j].producerId
+            ethAddress: data.producers[j].producerEthAddress
           }
         })
         const producerTrade = await this.tradeRepository.findOneOrFail({
@@ -522,7 +714,7 @@ export class NodeDatabaseService {
       for (let j = 0; j < data.prosumers.length; j++) {
         const prosumer = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.prosumers[j].prosumerId
+            ethAddress: data.prosumers[j].prosumerEthAddress
           }
         })
 
@@ -536,7 +728,7 @@ export class NodeDatabaseService {
         })
         const producer = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.producers[i].producerId
+            ethAddress: data.producers[i].producerEthAddress
           }
         })
         const producerTrade = await this.tradeRepository.findOneOrFail({
@@ -604,7 +796,7 @@ export class NodeDatabaseService {
       for (let j = 0; j < data.prosumers.length; j++) {
         const consumer = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.consumers[i].consumerId
+            ethAddress: data.consumers[i].consumerEthAddress
           }
         })
         const consumerTrade = await this.tradeRepository.findOneOrFail({
@@ -617,7 +809,7 @@ export class NodeDatabaseService {
         })
         const prosumer = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.prosumers[j].prosumerId
+            ethAddress: data.prosumers[j].prosumerEthAddress
           }
         })
         const prosumerTrade = await this.tradeRepository.findOneOrFail({
@@ -684,12 +876,12 @@ export class NodeDatabaseService {
       for (let j = i+1; j < data.prosumers.length; j++) {
         const prosumer1 = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.prosumers[i].prosumerId
+            ethAddress: data.prosumers[i].prosumerEthAddress
           }
         })
         const prosumer2 = await this.cellRepository.findOneOrFail({
           where: {
-            ethAddress: data.prosumers[j].prosumerId
+            ethAddress: data.prosumers[j].prosumerEthAddress
           }
         })
         const prosumer1Trade = await this.tradeRepository.findOneOrFail({
@@ -768,7 +960,7 @@ export class NodeDatabaseService {
     await Promise.all(data.consumers.map(async value => {
       const consumer = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.consumerId
+          ethAddress: value.consumerEthAddress
         }
       })
       const consumerTrade = await this.tradeRepository.findOneOrFail({
@@ -801,7 +993,7 @@ export class NodeDatabaseService {
     await Promise.all(data.prosumers.map(async value => {
       const prosumer = await this.cellRepository.findOneOrFail({
         where: {
-          ethAddress: value.prosumerId
+          ethAddress: value.prosumerEthAddress
         }
       })
       const prosumerTrade = await this.tradeRepository.findOneOrFail({
