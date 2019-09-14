@@ -5,10 +5,10 @@ import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
 import {
-  EthAddressOperator,
   EthAddressesConsumers,
   EthAddressesProducers,
   EthAddressesProsumers,
+  EthAddressOperator,
   initialMockData
 } from "../mockData/config";
 
@@ -19,21 +19,25 @@ import {
   AdminTransactions,
   AMIGOCell,
   Authorization,
+  CellRealData,
+  ConsumerData,
   DataFromAMIGO,
-  HashingInfo, InitDataFromAMIGO, ProsumerData, CellRealData,
+  HashingInfo,
+  InitDataFromAMIGO,
+  ProducerData,
+  ProsumerData,
   UserAnchor,
   UserConsumption,
   UserMargin,
   UserPrices,
   UserProduction,
-  UserTransactions, ConsumerData, ProducerData
+  UserTransactions
 } from "../mockData/interfaces";
 import { onNewTransaction } from "../workers/onNewTransaction";
 import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
 
-const eps = 0.1
 const DEFAULT_BALANCE = 999
 const DEFAULT_MARGIN = 5
 const DEFAULT_OPCOEF = 4
@@ -113,6 +117,7 @@ export class NodeDatabaseService {
   }
 
   async fetchDataFromAMIGO() {
+    // getting all cells
     const prosumers = await this.cellRepository.find({
       where: {
         type: 'prosumer'
@@ -130,6 +135,7 @@ export class NodeDatabaseService {
     })
 
     const prosumerPreparedDatas = await Promise.all(prosumers.map(value => value.mrid).map(async value => {
+      //getting data from amigo
       const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
         auth: {
           username: LOGIN,
@@ -137,18 +143,30 @@ export class NodeDatabaseService {
         }
       })
       const prosumerData: CellRealData[] = response.data
-      const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
-      const energyOut = prosumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value + (currentValue.value > 0 ? 1 : 0), 0)
+      let energyIn = 0
+      let energyOut = 0
+      prosumerData.forEach(value1 => {
+        if (value1.value < 0) {
+          energyIn -= value1.value
+        } else {
+          energyOut += value1.value
+        }
+      })
+      // console.log("energyIn", energyIn)
+      // console.log("energyOut", energyOut)
+      // const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
+      // const energyOut = prosumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value + (currentValue.value > 0 ? 1 : 0), 0)
       const prosumerEntry = await this.cellRepository.findOneOrFail({
         where: {
           mrid: value
         }
       })
+
       const prosumerPreparedData: ProsumerData = {
         time: new Date(Date.now()),
         prosumerEthAddress: prosumerEntry.ethAddress,
-        energyIn: energyIn*60,
-        energyOut: energyOut*60
+        energyIn: energyIn/60,  // kV*h
+        energyOut: energyOut/60
       }
 
       return prosumerPreparedData
@@ -171,7 +189,7 @@ export class NodeDatabaseService {
 
       const consumerPreparedData: ConsumerData = {
         time: new Date(Date.now()),
-        energy: energy*60,
+        energy: energy/60,
         consumerEthAddress: consumerEntry.ethAddress
       }
 
@@ -193,10 +211,10 @@ export class NodeDatabaseService {
         }
       })
 
-      const power = 0 //todo: where should we take the power?
+      const power = energy //todo: where should we take the power?
       const producerPreparedData: ProducerData = {
         power: power,
-        energy: energy*60,
+        energy: energy/60,
         time: new Date(Date.now()),
         producerEthAddress: producerEntry.ethAddress
       }
@@ -205,10 +223,14 @@ export class NodeDatabaseService {
     }))
 
 
+    // console.log("prosumerPreparedDatas: ", prosumerPreparedDatas);
+    // console.log("consumerPreparedDatas: ", consumerPreparedDatas);
+    // console.log("producerPreparedDatas: ", producerPreparedDatas);
+
     this.handleDataFromAMIGO({
-      prosumers: prosumerPreparedDatas.filter(value => Math.abs(value.energyIn - value.energyOut) >= eps),
-      producers: producerPreparedDatas.filter(value => value.energy > eps),
-      consumers: consumerPreparedDatas.filter(value => value.energy > eps)
+      prosumers: prosumerPreparedDatas,
+      producers: producerPreparedDatas,
+      consumers: consumerPreparedDatas
     })
   }
 
@@ -329,6 +351,7 @@ export class NodeDatabaseService {
           ethAddress: value.producerEthAddress
         }
       })
+
       await this.tradeRepository.insert({
         time: value.time.toISOString(),
         energy: value.energy,
@@ -489,19 +512,19 @@ export class NodeDatabaseService {
       })
 
       const S1 = Trade_producer_table.reduce((previousValue, currentValue) => {
-        if (!currentValue.energy)
+        if (typeof currentValue.energy != 'number')
           throw new Error('producer table consists null \"energy\" field.')
         return previousValue + currentValue.energy * currentValue.price
       }, 0)
 
       const S2 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-        if (!cell.margin)
+        if (typeof cell.margin != "number")
           throw new Error('margin is null')
         if (typeof currentValue.pip !== 'boolean')
           throw new Error('prosumer table contains null \"pip\" field.')
-        if (!currentValue.energyOut)
+        if (typeof currentValue.energyOut != "number")
           throw new Error('energyOut is null')
-        if (!currentValue.energyIn)
+        if (typeof currentValue.energyIn != "number")
           throw new Error('energyIn in null')
         if (typeof currentValue.avPrice !== "number")
           throw new Error('avPrice is null')
@@ -509,7 +532,7 @@ export class NodeDatabaseService {
       }, 0)
 
       const S3 = Trade_producer_table.reduce((previousValue, currentValue) => {
-        if (!currentValue.energy)
+        if (typeof currentValue.energy != "number")
           throw new Error('energy is null')
         return previousValue + currentValue.energy
       }, 0)
@@ -517,15 +540,16 @@ export class NodeDatabaseService {
       const S4 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
         if (typeof currentValue.pip !== "boolean")
           throw new Error('pip is null')
-        if (!currentValue.energyOut)
+        if (typeof currentValue.energyOut != "number")
           throw new Error('energuOut is null')
-        if (!currentValue.energyIn)
+        if (typeof currentValue.energyIn != "number")
           throw new Error('energyIn is null')
 
         return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyIn - currentValue.energyOut)
       }, 0)
 
       priceForConsumerAndProsumer = (S1 + S2) / (S3 + S4)
+      // console.log("priceForConsumerAndProsumer: ", priceForConsumerAndProsumer);
 
       // calculating pay
       let pay: number
@@ -535,23 +559,23 @@ export class NodeDatabaseService {
         pay = 0
       }
       else {
-        if (!lastProsumerTrade.energyIn)
+        if (typeof lastProsumerTrade.energyIn != "number")
           throw new Error('energyIn is null')
-        if (!lastProsumerTrade.energyOut)
+        if (typeof lastProsumerTrade.energyOut != "number")
           throw new Error('energyOut is null')
 
         const S5 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-          if (!currentValue.energyOut)
+          if (typeof currentValue.energyOut != "number")
             throw new Error('energuOut is null')
           return previousValue + currentValue.energyOut
         }, 0)
         const S6 = Trade_consumer_table.reduce((previousValue, currentValue) => {
-          if (!currentValue.energy)
+          if (typeof currentValue.energy != "number")
             throw new Error('energy is null')
           return previousValue + currentValue.energy
         }, 0)
         const S7 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-          if (!currentValue.energyIn)
+          if (typeof currentValue.energyIn != "number")
             throw new Error('energyIn is null')
           return previousValue + currentValue.energyIn
         }, 0)
@@ -592,26 +616,26 @@ export class NodeDatabaseService {
         type: 'prosumer'
       })
 
-      if (!lastConsumerInTradeTable.energy)
+      if (typeof lastConsumerInTradeTable.energy != "number")
         throw new Error('energy is null')
 
       const S1 = Trade_producer_table.reduce((previousValue, currentValue) => {
-        if (!currentValue.energy)
+        if (typeof currentValue.energy != "number")
           throw new Error('energy is null')
         return previousValue + currentValue.energy
       }, 0)
       const S2 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-        if (!currentValue.energyOut)
+        if (typeof currentValue.energyOut != "number")
           throw new Error('energyOut is null')
         return previousValue + currentValue.energyOut
       }, 0)
       const S3 = Trade_consumer_table.reduce((previousValue, currentValue) => {
-        if (!currentValue.energy)
+        if (typeof currentValue.energy != "number")
           throw new Error('energy is null')
         return previousValue + currentValue.energy
       }, 0)
       const S4 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-        if (!currentValue.energyIn)
+        if (typeof currentValue.energyIn != "number")
           throw new Error('energyIn is null')
         return previousValue + currentValue.energyIn
       }, 0)
@@ -632,7 +656,7 @@ export class NodeDatabaseService {
         type: 'operator'
       }
     })
-    if (!operator.opCoef)
+    if (typeof operator.opCoef != "number")
       throw new Error('opCoef is null')
     // From every consumer to every producer
     for(let i = 0; i < data.consumers.length; i++) {
@@ -669,7 +693,7 @@ export class NodeDatabaseService {
           }
         })
         const S1 = producers.reduce((previousValue, currentValue) => {
-          if (!currentValue.energy)
+          if (typeof currentValue.energy != "number")
             throw new Error('energy is null')
           return previousValue + currentValue.energy
         }, 0)
@@ -682,9 +706,9 @@ export class NodeDatabaseService {
         const S2 = prosumers.reduce((previousValue, currentValue) => {
           if (typeof currentValue.pip !== "boolean")
             throw new Error('pip is not boolean')
-          if (!currentValue.energyIn)
+          if (typeof currentValue.energyIn != "number")
             throw new Error('energyIn is null')
-          if (!currentValue.energyOut)
+          if (typeof currentValue.energyOut != "number")
             throw new Error('energyOut is null')
 
           return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyOut - currentValue.energyIn)
@@ -692,20 +716,22 @@ export class NodeDatabaseService {
 
         if (typeof consumerTrade.pay !== 'number')
           throw new Error("pay is null")
-        if (!producerTrade.energy)
+        if (typeof producerTrade.energy != "number")
           throw new Error('energy is null')
 
         const cost = consumerTrade.pay * (1-operator.opCoef/100)*producerTrade.energy / (S1 + S2)
         const price = consumerTrade.price
 
-        await this.transactionRepository.insert({
-          cost: cost,
-          from: consumer,
-          to: producer,
-          time: new Date(Date.now()).toISOString(),
-          price: price, //todo: is it correct?
-          amount: cost/consumerTrade.price,
-        })
+        if (price) {
+          await this.transactionRepository.insert({
+            cost: cost,
+            from: consumer,
+            to: producer,
+            time: new Date(Date.now()).toISOString(),
+            price: price, //todo: is it correct?
+            amount: cost / consumerTrade.price,
+          })
+        }
       }
     }
 
@@ -746,7 +772,7 @@ export class NodeDatabaseService {
           }
         })
         const S1 = producers.reduce((previousValue, currentValue) => {
-          if (!currentValue.energy)
+          if (typeof currentValue.energy != "number")
             throw new Error('energy is null')
           return previousValue + currentValue.energy
         }, 0)
@@ -758,9 +784,9 @@ export class NodeDatabaseService {
         const S2 = prosumers.reduce((previousValue, currentValue) => {
           if (typeof currentValue.pip !== 'boolean')
             throw new Error('pip is noi boolean')
-          if (!currentValue.energyOut)
+          if (typeof currentValue.energyOut != "number")
             throw new Error('energyOut is null')
-          if (!currentValue.energyIn)
+          if (typeof currentValue.energyIn != "number")
             throw new Error('energyIn is null')
 
           return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyOut - currentValue.energyIn)
@@ -772,20 +798,22 @@ export class NodeDatabaseService {
         if (!prosumerTrade.pip) {
           if (typeof prosumerTrade.pay !== 'number')
             throw new Error('pay is null')
-          if (!producerTrade.energy)
+          if (typeof producerTrade.energy != "number")
             throw new Error('energy is null')
 
           const cost = prosumerTrade.pay*(1-operator.opCoef/100)*producerTrade.energy / (S1 + S2)
           const price = prosumerTrade.price
 
-          await this.transactionRepository.insert({
-            cost: cost,
-            from: prosumer,
-            to: producer,
-            time: new Date(Date.now()).toISOString(),
-            price: price, //todo: is it correct
-            amount: cost/price,
-          })
+          if (price) {
+            await this.transactionRepository.insert({
+              cost: cost,
+              from: prosumer,
+              to: producer,
+              time: new Date(Date.now()).toISOString(),
+              price: price, //todo: is it correct
+              amount: cost / price,
+            })
+          }
         }
       }
     }
@@ -827,7 +855,7 @@ export class NodeDatabaseService {
           }
         })
         const S1 = producers.reduce((previousValue, currentValue) => {
-          if (!currentValue.energy)
+          if (typeof currentValue.energy != "number")
             throw new Error('energy is null')
           return previousValue + currentValue.energy
         }, 0)
@@ -839,9 +867,9 @@ export class NodeDatabaseService {
         const S2 = prosumers.reduce((previousValue, currentValue) => {
           if (typeof currentValue.pip !== 'boolean')
             throw new Error('pip is noi boolean')
-          if (!currentValue.energyOut)
+          if (typeof currentValue.energyOut != "number")
             throw new Error('energyOut is null')
-          if (!currentValue.energyIn)
+          if (typeof currentValue.energyIn != "number")
             throw new Error('energyIn is null')
 
           return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyOut - currentValue.energyIn)
@@ -852,21 +880,24 @@ export class NodeDatabaseService {
         if (prosumerTrade.pip) {
           if (typeof consumerTrade.pay !== 'number')
             throw new Error('pay is null')
-          if (!prosumerTrade.energyIn)
+          if (typeof prosumerTrade.energyIn != "number")
             throw new Error('energyIn is null')
-          if (!prosumerTrade.energyOut)
+          if (typeof prosumerTrade.energyOut != "number")
             throw new Error('energyOut is null')
 
           const cost = consumerTrade.pay * (1-operator.opCoef/100)*(prosumerTrade.energyOut-prosumerTrade.energyIn) / (S1 + S2)
           const price = consumerTrade.price
-          await this.transactionRepository.insert({
-            cost: cost,
-            time: new Date(Date.now()).toISOString(),
-            from: consumer,
-            to: prosumer,
-            price: price, //todo: is it correct?
-            amount: cost/price,
-          })
+
+          if (price) {
+            await this.transactionRepository.insert({
+              cost: cost,
+              time: new Date(Date.now()).toISOString(),
+              from: consumer,
+              to: prosumer,
+              price: price, //todo: is it correct?
+              amount: cost / price,
+            })
+          }
         }
       }
     }
@@ -906,7 +937,7 @@ export class NodeDatabaseService {
           }
         })
         const S1 = producers.reduce((previousValue, currentValue) => {
-          if (!currentValue.energy)
+          if (typeof currentValue.energy != "number")
             throw new Error('energy is null')
           return previousValue + currentValue.energy
         }, 0)
@@ -918,9 +949,9 @@ export class NodeDatabaseService {
         const S2 = prosumers.reduce((previousValue, currentValue) => {
           if (typeof currentValue.pip !== 'boolean')
             throw new Error('pip is noi boolean')
-          if (!currentValue.energyOut)
+          if (typeof currentValue.energyOut != "number")
             throw new Error('energyOut is null')
-          if (!currentValue.energyIn)
+          if (typeof currentValue.energyIn != "number")
             throw new Error('energyIn is null')
 
           return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyOut - currentValue.energyIn)
@@ -934,9 +965,9 @@ export class NodeDatabaseService {
         if (!prosumer1Trade.pip && prosumer2Trade.pip) {
           if (typeof prosumer1Trade.pay !== 'number')
             throw new Error('prosumer1 pas null pay')
-          if (!prosumer2Trade.energyOut)
+          if (typeof prosumer2Trade.energyOut != "number")
             throw new Error('prosumer2 has null energyOut')
-          if (!prosumer2Trade.energyIn)
+          if (typeof prosumer2Trade.energyIn != "number")
             throw new Error('prosumer2 has null enenrgyIn')
 
           const cost = prosumer1Trade.pay*(1-operator.opCoef/100)*(prosumer2Trade.energyOut - prosumer2Trade.energyIn) / (S1 + S2)
@@ -944,14 +975,16 @@ export class NodeDatabaseService {
           const time = new Date(Date.now()).toISOString()
           const amount = cost / price
 
-          await this.transactionRepository.insert({
-            cost: cost,
-            time: time,
-            from: prosumer1,
-            to: prosumer2,
-            price: price,
-            amount: amount,
-          })
+          if (price) {
+            await this.transactionRepository.insert({
+              cost: cost,
+              time: time,
+              from: prosumer1,
+              to: prosumer2,
+              price: price,
+              amount: amount,
+            })
+          }
         }
       }
     }
@@ -973,20 +1006,22 @@ export class NodeDatabaseService {
       })
       if (typeof consumerTrade.pay !== "number")
         throw new Error('pay is null')
-      if (!operator.opCoef)
+      if (typeof operator.opCoef != "number")
         throw new Error('opCoef is null')
 
       const cost = consumerTrade.pay*(operator.opCoef/100)
       const price = consumerTrade.price
 
-      await this.transactionRepository.insert({
-        cost: cost,
-        time: new Date(Date.now()).toISOString(),
-        from: consumer,
-        to: operator,
-        price: price,
-        amount: cost/price,
-      })
+      if (price) {
+        await this.transactionRepository.insert({
+          cost: cost,
+          time: new Date(Date.now()).toISOString(),
+          from: consumer,
+          to: operator,
+          price: price,
+          amount: cost / price,
+        })
+      }
     }))
 
 
@@ -1007,23 +1042,25 @@ export class NodeDatabaseService {
       if (typeof prosumerTrade.pip !== 'boolean')
         throw new Error('pip is not boolean')
       if (!prosumerTrade.pip) {
-        if (!operator.opCoef)
+        if (typeof operator.opCoef != "number")
           throw new Error('opCoef is null')
-        if (!prosumerTrade.pay)
+        if (typeof prosumerTrade.pay != 'number')
           throw new Error('pay is null')
 
         const cost = prosumerTrade.pay*operator.opCoef/100
         const price = prosumerTrade.price
         const time = new Date(Date.now()).toISOString()
 
-        await this.transactionRepository.insert({
-          cost: cost,
-          time: time,
-          price: price,
-          amount: cost/price,
-          from: prosumer,
-          to: operator,
-        })
+        if (price) {
+          await this.transactionRepository.insert({
+            cost: cost,
+            time: time,
+            price: price,
+            amount: cost / price,
+            from: prosumer,
+            to: operator,
+          })
+        }
       }
     }))
   }
@@ -1052,7 +1089,7 @@ export class NodeDatabaseService {
       consumer: {
         date: Date.now(),
         consumer: tradeConsumerTableForLastDay.map(value => {
-          if (!value.energy)
+          if (typeof value.energy != "number")
             throw new Error('null energy')
           return {
             energy: value.energy
@@ -1062,7 +1099,7 @@ export class NodeDatabaseService {
       producer: {
         date: Date.now(),
         producer: tradeProducerTableForLastDay.map(value => {
-          if (!value.energy || !value.power)
+          if (typeof value.energy != "number" || typeof value.power != "number")
             throw new Error('null energy or null power')
           return {
             energy: value.energy,
@@ -1073,7 +1110,7 @@ export class NodeDatabaseService {
       prosumer: {
         date: Date.now(),
         prosumer: tradeProsumerTableForLastDay.map(value => {
-          if (!value.energyIn || !value.energyOut)
+          if (typeof value.energyIn != "number" || typeof value.energyOut != "number")
             throw new Error('null energyIn or energyOut')
           return {
             energyIn: value.energyIn,
@@ -1137,7 +1174,7 @@ export class NodeDatabaseService {
       maxPrice: maxPrice,
       averagePrice: avgPrice,
       energy_today: entitiesToday.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('energy is null')
         return {
           date: value.time,
@@ -1145,7 +1182,7 @@ export class NodeDatabaseService {
         }
       }),
       energy_30_day: entities30Today.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('energy is null')
         return {
           date: value.time,
@@ -1153,7 +1190,7 @@ export class NodeDatabaseService {
         }
       }),
       price_today: entitiesToday.map(value => {
-        if (!value.price)
+        if (typeof value.price != "number")
           throw new Error('price is null')
         return {
           date: value.time,
@@ -1161,7 +1198,7 @@ export class NodeDatabaseService {
         }
       }),
       price_30_day: entitiesToday.map(value => {
-        if (!value.price)
+        if (typeof value.price != "number")
           throw new Error('price is null')
         return {
           date: value.time,
@@ -1169,7 +1206,7 @@ export class NodeDatabaseService {
         }
       }),
       consumption_peers: tradeTableConsumers.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           total: value.cell.name,
@@ -1192,7 +1229,7 @@ export class NodeDatabaseService {
 
     return {
       production_peers: producers.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           total: value.cell.name,
@@ -1223,7 +1260,7 @@ export class NodeDatabaseService {
   }
 
   async authorization(auth: Authorization) {
-    return !!(auth.login === 'kanzeparov@yandex.ru' && auth.password === '1234567890');
+    return !!(auth.login === 'kanzeparov@yandex.ru' && auth.password === '1234567890'); //todo: make properly
   }
 
   async userMargin(data: UserMargin, cellEthAddress: string) {
@@ -1272,38 +1309,38 @@ export class NodeDatabaseService {
     })
 
 
-    if (!userTradeTable[0].energy)
+    if (typeof userTradeTable[0].energy != "number")
       throw new Error('user trade table seems to be empty')
     const minE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.energy)
+      if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy < previousValue ? currentValue.energy : previousValue
     }, userTradeTable[0].energy)
     const maxE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.energy)
+      if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy > previousValue ? currentValue.energy : previousValue
     }, userTradeTable[0].energy)
     const avgE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.energy)
+      if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy + previousValue
     }, 0) / userTradeTable.length
 
-    if (!userTradeTable[0].price)
+    if (typeof userTradeTable[0].price != "number")
       throw new Error('user trade table seems to be empty')
     const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.price)
+      if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price < previousValue ? currentValue.price : previousValue
     }, userTradeTable[0].price)
     const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.price)
+      if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price > previousValue ? currentValue.price : previousValue
     }, userTradeTable[0].price)
     const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.price)
+      if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price + previousValue
     }, 0)/userTradeTable.length
@@ -1318,7 +1355,7 @@ export class NodeDatabaseService {
       maxPrice: maxPrice,
       averagePrice: avgPrice,
       energy_today: userTradeTable1Day.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           date: value.time,
@@ -1326,7 +1363,7 @@ export class NodeDatabaseService {
         }
       }),
       energy_30_day: userTradeTable30Day.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           date: value.time,
@@ -1334,7 +1371,7 @@ export class NodeDatabaseService {
         }
       }),
       price_today: userTradeTable1Day.map(value => {
-        if (!value.price)
+        if (typeof value.price != "number")
           throw new Error('null price')
         return {
           date: value.time,
@@ -1342,7 +1379,7 @@ export class NodeDatabaseService {
         }
       }),
       price_30_day: userTradeTable30Day.map(value => {
-        if (!value.price)
+        if (typeof value.price != "number")
           throw new Error('null price')
         return {
           date: value.time,
@@ -1350,7 +1387,7 @@ export class NodeDatabaseService {
         }
       }),
       consumption_peers: userTradeTable.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           total: value.cell.name,
@@ -1400,36 +1437,36 @@ export class NodeDatabaseService {
     if (!userTradeTable[0].energy)
       throw new Error('user trade table seems to be empty')
     const minE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.energy)
+      if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy < previousValue ? currentValue.energy : previousValue
     }, userTradeTable[0].energy)
     const maxE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.energy)
+      if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy > previousValue ? currentValue.energy : previousValue
     }, userTradeTable[0].energy)
     const avgE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.energy)
+      if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy + previousValue
     }, 0)/userTradeTable.length
 
 
-    if (!userTradeTable[0].price)
+    if (typeof userTradeTable[0].price != "number")
       throw new Error('user trade table seems to be empty')
     const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.price)
+      if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price < previousValue ? currentValue.price : previousValue
     }, userTradeTable[0].price)
     const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.price)
+      if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price > previousValue ? currentValue.price : previousValue
     }, userTradeTable[0].price)
     const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (!currentValue.price)
+      if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price + previousValue
     }, 0)/userTradeTable.length
@@ -1444,7 +1481,7 @@ export class NodeDatabaseService {
       maxPrice: maxPrice,
       averagePrice: avgPrice,
       energy_today: userTradeTable1Day.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           date: value.time,
@@ -1452,7 +1489,7 @@ export class NodeDatabaseService {
         }
       }),
       energy_30_day: userTradeTable30Day.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           date: value.time,
@@ -1460,7 +1497,7 @@ export class NodeDatabaseService {
         }
       }),
       price_today: userTradeTable1Day.map(value => {
-        if (!value.price)
+        if (typeof value.price != "number")
           throw new Error('null price')
         return {
           date: value.time,
@@ -1468,7 +1505,7 @@ export class NodeDatabaseService {
         }
       }),
       price_30_day: userTradeTable30Day.map(value => {
-        if (!value.price)
+        if (typeof value.price != "number")
           throw new Error('null price')
         return {
           date: value.time,
@@ -1476,7 +1513,7 @@ export class NodeDatabaseService {
         }
       }),
       production_peers: userTradeTable.map(value => {
-        if (!value.energy)
+        if (typeof value.energy != "number")
           throw new Error('null energy')
         return {
           total: value.cell.name,
