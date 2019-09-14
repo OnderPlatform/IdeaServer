@@ -390,7 +390,6 @@ export class NodeDatabaseService {
         }
       })
 
-
       await this.tradeRepository.insert({
         cell: cell,
         time: value.time.toISOString(),

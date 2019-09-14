@@ -32,8 +32,6 @@ export default class Application {
       await this.db.service.fetchInitialDataFromAMIGO()
       await this.db.service.initialDataForOperator()
     }
-    await this.db.service.fetchDataFromAMIGO()
-    // const t = await this.db.service.userTransactions('0xc29b08e2ca18a000000000000')
-    // console.log(t);
+    await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
   }
 }
