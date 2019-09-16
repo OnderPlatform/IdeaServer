@@ -357,7 +357,8 @@ export class NodeDatabaseService {
         energy: value.energy,
         power: value.power,
         cell: cell,
-        type: 'producer'
+        type: 'producer',
+        price: 0
       })
     }))
     await Promise.all(data.consumers.map(async value => {
@@ -371,7 +372,8 @@ export class NodeDatabaseService {
         cell: cell,
         time: value.time.toISOString(),
         energy: value.energy,
-        type: 'consumer'
+        type: 'consumer',
+        price: 0
       })
     }))
     await Promise.all(data.prosumers.map(async value => {
@@ -396,7 +398,8 @@ export class NodeDatabaseService {
         energyIn: value.energyIn,
         energyOut: value.energyOut,
         type: 'prosumer',
-        energyInAll: (tmp ? (tmp.energyInAll ? tmp.energyInAll : 0) : 0) + value.energyIn
+        energyInAll: (tmp ? (tmp.energyInAll ? tmp.energyInAll : 0) : 0) + value.energyIn,
+        price: 0
       })
     }))
     // 2. Pip, avPrice
