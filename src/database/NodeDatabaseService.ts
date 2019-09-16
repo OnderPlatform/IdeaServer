@@ -1607,6 +1607,30 @@ export class NodeDatabaseService {
     })
   }
 
+  async updateTransactionState(from: string, to: string, approved: boolean) {
+    const fromCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: from
+      }
+    })
+    const toCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: to
+      }
+    })
+    await this.transactionRepository.update({
+      from: fromCell,
+      to: toCell
+    }, {
+      approved: approved
+    })
+  }
+
+  async newTransactionStateFromMQTT() {
+
+    // this.updateTransactionState()
+  }
+
   async sendNewTransactionsToMQTT() {
     const newTransactions = await this.transactionRepository.find({
       where: {

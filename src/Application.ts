@@ -36,6 +36,7 @@ export default class Application {
     }
     await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
     await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
+    this.mqtt.add_handler(this.db.service.newTransactionStateFromMQTT)
     this.mqtt.start()
   }
 }
