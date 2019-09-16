@@ -360,8 +360,7 @@ export class BaseController {
 
   }
 
-  async login(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
+  async login(ctx: Router.IRouterContext){
     try {
       // const body = JSON.parse( as string)
       console.log(ctx.request.body.email);
@@ -372,33 +371,45 @@ export class BaseController {
     let email = ctx.request.body.email
     let password = ctx.request.body.password
     if (!(email && password)) {
-      ctx.response.status = 400
+        ctx.response.status = 400
     }
 
     //Get user from database
     const userRepository = getRepository(User);
     let user: User | undefined;
 
-    try {
-      user = await userRepository.findOneOrFail({where: {email}});
-    } catch (error) {
-      ctx.response.status = 401
-    }
-    if (user != undefined && user.password == password) {
+      try {
+        user = await userRepository.findOneOrFail({ where: { email } });
+      } catch (error) {
+          ctx.response.status = 401
+      }
+        var token = ""
+      if(user != undefined && user.password==password) {
+        if(user.isAdmin) {
       //Sing JWT, valid for 1 hour
-      const token = jwt.sign(
-        {userId: user.id, email: user.email},
-        config.jwtSecret,
-        {expiresIn: "10m"}
+        token = jwt.sign(
+          { userId: user.id, email: user.email },
+          config.adminSecret,
+          { expiresIn: "10m" }
+        );
+
+        console.log("admin")
+      } else {
+        token = jwt.sign(
+          { userId: user.id, email: user.email },
+          user.email,
+          { expiresIn: "10m" }
       );
+        console.log("user")}
 
 
-      //Try to validate the token and get data
+        //Try to validate the token and get data
 
 
-      //Send the jwt in the response
+        //Send the jwt in the response
       ctx.response.body = token
     }
+
   };
 
 
@@ -406,12 +417,14 @@ export class BaseController {
     //Get parameters from the body
     let email = ctx.request.body.email
     let password = ctx.request.body.password
+    let isAdmin = ctx.request.body.isAdmin
     if (!(email && password)) {
       ctx.response.status = 400
     }
     let user = new User();
     user.email = email;
     user.password = password;
+    user.isAdmin = isAdmin;
 
     //Validade if the parameters are ok
     const errors = await validate(user);
@@ -435,10 +448,6 @@ export class BaseController {
 
   async listAll(ctx: Router.IRouterContext) {
 
-    check(ctx)
-    if (ctx.response.status == 401) {
-      return
-    }
     // const { userId, username } = jwtPayload;
     // const newToken = jwt.sign({ userId, username }, config.jwtSecret, {
     //   expiresIn: "1h"
@@ -447,7 +456,7 @@ export class BaseController {
     //Get users from database
     const userRepository = getRepository(User);
     const users = await userRepository.find({
-      select: ["id", "email", "password"] //We dont want to send the passwords on response
+      select: ["id", "email", "password", "isAdmin"] //We dont want to send the passwords on response
     });
 
     //Send the users object
@@ -457,18 +466,33 @@ export class BaseController {
 
 }
 
-function check(ctx: Router.IRouterContext) {
+async function check(ctx: Router.IRouterContext) {
   const token = <string>ctx.request.headers["auth"];
+  const email = <string>ctx.request.headers["from"];
+      console.log("email - " + email + " auth - " + token)
   let jwtPayload;
-
+  const userRepository = getRepository(User);
+const user = await userRepository.findOneOrFail({
+  where: {
+    email: email
+  }
+})
   //Try to validate the token and get data
   try {
-    jwtPayload = <any>jwt.verify(token, config.jwtSecret);
-    //ctx.res.locals.jwtPayload = jwtPayload;
-    console.log(token)
+
+
+    if(user.isAdmin) {      jwtPayload = <any>jwt.verify(token, config.adminSecret);
+          //ctx.res.locals.jwtPayload = jwtPayload;
+          console.log("admin - " + token)}
+    else {
+      jwtPayload = <any>jwt.verify(token, email);
+      //ctx.res.locals.jwtPayload = jwtPayload;
+      console.log("user - " + email)
+    }
+
   } catch (error) {
     //If token is not valid, respond with 401 (unauthorized)
-    ctx.response.status = 401
+  ctx.response.status = 401
     return;
   }
 

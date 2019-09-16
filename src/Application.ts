@@ -1,7 +1,7 @@
 import WebServer from './webEndpoints/WebServer'
 import NodeDatabase from './database/NodeDatabase'
 import * as mqtt_cl from './mqtt/Mqtt_client'
-
+import * as cron from 'node-cron'
 export default class Application {
   private readonly web: WebServer
   private readonly db: NodeDatabase
@@ -34,9 +34,14 @@ export default class Application {
       await this.db.service.fetchInitialDataFromAMIGO()
       await this.db.service.initialDataForOperator()
     }
-    await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
-    await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
+
     this.mqtt.add_handler(this.db.service.newTransactionStateFromMQTT)
     this.mqtt.start()
+
+    // cron.schedule("* * * * *", function () {
+    //   console.log("running a fetchDataFromAMIGO and sendNewTransactionsToMQTT every minute");
+    //   await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
+    //   await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
+    // });
   }
 }

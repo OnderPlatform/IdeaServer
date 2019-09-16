@@ -1626,9 +1626,8 @@ export class NodeDatabaseService {
     })
   }
 
-  async newTransactionStateFromMQTT() {
-
-    // this.updateTransactionState()
+  async newTransactionStateFromMQTT(value: string, message: string) {
+    console.log("Receive new message from handler - %o ", value)
   }
 
   async sendNewTransactionsToMQTT() {
