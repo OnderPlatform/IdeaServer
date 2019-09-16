@@ -1,6 +1,6 @@
 import * as Router from 'koa-router'
 import * as fs from 'fs';
-import * as cron from 'node-cron'
+
 import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/NodeDatabase";
 import * as jwt from "jsonwebtoken";
@@ -53,16 +53,10 @@ export class BaseController {
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-      const mqtt = new mqtt_cl.ClientMQTT()
-      mqtt.add_handler(this.handler)
-      mqtt.start()
       this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       excel.parse()
       mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
-      cron.schedule("* * * * *", function () {
-        console.log("running a task every minute");
-      });
     })
 
     router.get('/download', async function (ctx) {
@@ -481,15 +475,15 @@ async function check(ctx: Router.IRouterContext) {
   const email = <string>ctx.request.headers["from"];
       console.log("email - " + email + " auth - " + token)
   let jwtPayload;
-  const userRepository = getRepository(User);
-const user = await userRepository.findOneOrFail({
-  where: {
-    email: email
-  }
-})
+
   //Try to validate the token and get data
   try {
-
+    const userRepository = getRepository(User);
+  const user = await userRepository.findOneOrFail({
+    where: {
+      email: email
+    }
+  })
 
     if(user.isAdmin) {      jwtPayload = <any>jwt.verify(token, config.adminSecret);
           //ctx.res.locals.jwtPayload = jwtPayload;
