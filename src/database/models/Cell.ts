@@ -29,6 +29,6 @@ export class Cell extends BaseEntity {
   @Column({type: 'real', nullable: true})
   opCoef?: number
 
-  @Column({unique: true})
-  mrid!: string
+  @Column({ nullable: true,unique: true})
+  mrid!: string //поменял так как падало, nullable true
 }
