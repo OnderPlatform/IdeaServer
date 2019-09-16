@@ -415,30 +415,40 @@ export class BaseController {
 
   async newUser(ctx: Router.IRouterContext) {
     //Get parameters from the body
-    let email = ctx.request.body.email
-    let password = ctx.request.body.password
-    let isAdmin = ctx.request.body.isAdmin
+    const email = ctx.request.body.email
+    const password = ctx.request.body.password
+    const isAdmin = ctx.request.body.isAdmin
+    const ethAddress = ctx.request.body.ethAddrress
+
     if (!(email && password)) {
       ctx.response.status = 400
     }
-    let user = new User();
-    user.email = email;
-    user.password = password;
-    user.isAdmin = isAdmin;
+
+    const cell = await this.db.service.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: ethAddress
+      }
+    })
+
 
     //Validade if the parameters are ok
-    const errors = await validate(user);
-    if (errors.length > 0) {
-      ctx.response.status = 400
-      return;
-    }
+    // const errors = await validate(user);
+    // if (errors.length > 0) {
+    //   ctx.response.status = 400
+    //   return;
+    // }
 
     //Try to save. If fails, the email is already in use
-    const userRepository = getRepository(User);
     try {
-      await userRepository.save(user);
+      await this.db.service.userRepository.save({
+        isAdmin: isAdmin,
+        email: email,
+        cell: cell,
+        password: password
+      })
     } catch (e) {
       ctx.response.status = 409
+      console.log(e);
       return;
     }
 
