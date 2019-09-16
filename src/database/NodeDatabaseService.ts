@@ -1625,9 +1625,72 @@ export class NodeDatabaseService {
       approved: approved
     })
   }
+  /*
+  "Раз в 20 секунд
+
+{
+   id:""123"",
+   port:1,
+   mode:1
+   amount:300, seller: ""Agent-nodeX"",
+   contragent:""Agent365"",
+   cost:24.4,
+   ""timeStamp"": ""2011-12-03T10:15:30Z"",
+   progress: 123.7, #в вт*ч
+   delta: 12.5, #в вт*ч - разница между progress
+   progress_percent: 0.3 #в о.е.
+   payment_state: true | false
+}"
+  */
 
   async newTransactionStateFromMQTT(value: string, message: string) {
-    console.log("Receive new message from handler - %o ", value)
+    console.log("Receive new message from handler - %o ", message)
+    if(value.endsWith("finance")) {
+      console.log("finance - mqtt")
+      if(value.includes('enode1')) {
+        //TODO added all nodes
+        //TODO add in database in specific node info
+        let obj = JSON.parse(message);
+
+        const newTransactions = await this.cellRepository.find({
+          where: {
+            name: "enode1"
+          }
+        })
+      for (const value of newTransactions) {
+        await this.cellRepository.update({
+          id: value.id
+        }, {
+          balance: obj.value
+        })
+      }
+
+      }
+    }
+
+    if(value.endsWith("progress")) {
+      console.log("progress - mqtt")
+
+      const newTransactions = await this.transactionRepository.find({
+        where: {
+          sentToMqtt: true
+        },
+        relations: ['from', 'to']
+      })
+      if(value.includes('enode1')) {
+      let obj = JSON.parse(message);
+      for (const value of newTransactions) {
+        // вытащить данны из переменной value и отправить в publishProgress
+        if(obj.seller==value.from && obj.contragent==value.to){
+          await this.transactionRepository.update({
+            id: value.id
+          }, {
+            approved: obj.payment_state
+          })
+        }
+      }
+    }
+    }
   }
 
   async sendNewTransactionsToMQTT() {
@@ -1650,5 +1713,79 @@ export class NodeDatabaseService {
         sentToMqtt: true
       })
     }
+  }
+
+
+  async makePostRequest() {
+    const newTransactions = await this.userRepository.find({})
+    let timeStamp = Date.now()
+    let hash = ""
+    let address = ""
+    let params: any;
+    for (const value of newTransactions) {
+      // вытащить данны из переменной value и отправить в publishProgress
+      //TODO how create
+      // await this.anchorRepository.create({
+      //   user: value,
+      //   time: timeStamp,
+      //   hashId: hash,
+      //   address: address
+      // })
+
+
+      // const some = await this.tradeRepository.find({
+      //   where: {
+      //     cell: value.id,
+      //     //time:  //TODO how get all data from last day
+      //   }
+      // })
+      params = {
+          "date": timeStamp+"",
+          "entries": []
+        }
+
+      // if(value.cell.type=="prosumer") {
+      // params = {
+      //     date: timeStamp,
+      //     entries: ""
+      //   }
+      // }
+      //
+      // if(value.cell.type=="producer") {
+      // params = {
+      //     date: timeStamp,
+      //     entries:""
+      //   }
+      // }
+      //
+      // if(value.cell.type=="consumer") {
+      // params = {
+      //     date: timeStamp,
+      //     entries:""
+      //   }
+      // }
+
+      let url = "http://localhost:9505/timestamp/add/"
+try {
+      let res = await axios.post(url, params);
+
+      console.log(res.data);
+    } catch(e) {
+      console.log(e);
+      console.log(params)
+    }
+      console.log(params)
+
+      //TODO save hash and address
+    }
+
+
+  }
+
+  //TODO check function
+
+
+  async sendDataToAnchor() {
+    //create anchor to appropriete user with appropriete data
   }
 }
