@@ -33,7 +33,6 @@ import {
   UserProduction,
   UserTransactions
 } from "../mockData/interfaces";
-import { onNewTransaction } from "../workers/onNewTransaction";
 import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
@@ -1616,16 +1615,11 @@ export class NodeDatabaseService {
       relations: ['from', 'to']
     })
     for (const value of newTransactions) {
-      await onNewTransaction({
-        amount: value.amount,
-        approved: value.approved,
-        cost: value.cost,
-        from: value.from.ethAddress,
-        to: value.to.ethAddress,
-        price: value.price,
-        time: value.time
-      })
+      // вытащить данны из переменной value и отправить в publishProgress
+      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
     }
+
+
     for (const value of newTransactions) {
       await this.transactionRepository.update({
         id: value.id

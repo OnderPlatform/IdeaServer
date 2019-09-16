@@ -1,12 +1,14 @@
 import WebServer from './webEndpoints/WebServer'
 import NodeDatabase from './database/NodeDatabase'
+import * as mqtt_cl from './mqtt/Mqtt_client'
 
 export default class Application {
-
   private readonly web: WebServer
   private readonly db: NodeDatabase
+  private readonly mqtt: mqtt_cl.ClientMQTT
 
   constructor () {
+    this.mqtt = new mqtt_cl.ClientMQTT()
     this.db = new NodeDatabase({
       'type': 'postgres',
       'host': 'localhost',
@@ -19,7 +21,7 @@ export default class Application {
       'entities': [
         'dist/database/models/**/*.js'
       ]
-    })
+    }, this.mqtt)
     this.web = new WebServer(8888, 'localhost', this.db)
   }
 
@@ -33,5 +35,7 @@ export default class Application {
       await this.db.service.initialDataForOperator()
     }
     await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
+    await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
+    this.mqtt.start()
   }
 }
