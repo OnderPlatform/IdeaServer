@@ -1610,12 +1610,12 @@ export class NodeDatabaseService {
   async updateTransactionState(from: string, to: string, approved: boolean) {
     const fromCell = await this.cellRepository.findOneOrFail({
       where: {
-        ethAddress: from
+        name: from
       }
     })
     const toCell = await this.cellRepository.findOneOrFail({
       where: {
-        ethAddress: to
+        name: to
       }
     })
     await this.transactionRepository.update({
