@@ -117,6 +117,7 @@ export interface AlgorithmResult {
 interface ConsumerHashingInfo {
   date: number
   consumer: Array<{
+    email: string
     energy: number
   }>
 }
@@ -124,6 +125,7 @@ interface ConsumerHashingInfo {
 interface ProducerHashingInfo {
   date: number
   producer: Array<{
+    email: string
     energy: number
     power: number
   }>
@@ -132,6 +134,7 @@ interface ProducerHashingInfo {
 interface ProsumerHashingInfo {
   date: number
   prosumer: Array<{
+    email: string
     energyIn: number
     energyOut: number
   }>

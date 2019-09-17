@@ -1069,55 +1069,76 @@ export class NodeDatabaseService {
   async tradeInfoForHashing (): Promise<HashingInfo> {
     const tradeConsumerTableForLastDay = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        time: Raw(columnAlias => `${columnAlias}::date = current_date - interval '1 day'`),
         type: 'consumer'
-      }
+      },
+      relations: ['cell']
     })
     const tradeProducerTableForLastDay = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        time: Raw(columnAlias => `${columnAlias}::date = current_date - interval '1 day'`),
         type: 'producer'
-      }
+      },
+      relations: ['cell']
     })
     const tradeProsumerTableForLastDay = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        time: Raw(columnAlias => `${columnAlias}::date = current_date - interval '1 day'`),
         type: 'prosumer'
-      }
+      },
+      relations: ['cell']
     })
 
     return {
       consumer: {
         date: Date.now(),
-        consumer: tradeConsumerTableForLastDay.map(value => {
+        consumer: await Promise.all(tradeConsumerTableForLastDay.map(async value => {
           if (typeof value.energy != "number")
             throw new Error('null energy')
+          const user = await this.userRepository.findOneOrFail({
+            where: {
+              cell: value.cell
+            }
+          })
           return {
+            email: user.email,
             energy: value.energy
           }
-        })
+        }))
       },
       producer: {
         date: Date.now(),
-        producer: tradeProducerTableForLastDay.map(value => {
+        producer: await Promise.all(tradeProducerTableForLastDay.map(async value => {
           if (typeof value.energy != "number" || typeof value.power != "number")
             throw new Error('null energy or null power')
+          const user = await this.userRepository.findOneOrFail({
+            where: {
+              cell: value.cell
+            }
+          })
           return {
+            email: user.email,
             energy: value.energy,
-            power: value.power
+            power: value.power,
           }
-        })
+        }))
       },
       prosumer: {
         date: Date.now(),
-        prosumer: tradeProsumerTableForLastDay.map(value => {
+        prosumer: await Promise.all(tradeProsumerTableForLastDay.map(async value => {
           if (typeof value.energyIn != "number" || typeof value.energyOut != "number")
             throw new Error('null energyIn or energyOut')
+          const user = await this.userRepository.findOneOrFail({
+            where: {
+              cell: value.cell
+            }
+          })
           return {
+            email: user.email,
             energyIn: value.energyIn,
-            energyOut: value.energyOut
+            energyOut: value.energyOut,
           }
-        })
+        }))
       }
     }
   }
