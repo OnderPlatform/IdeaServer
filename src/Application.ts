@@ -47,8 +47,8 @@ export default class Application {
 
     this.mqtt.add_handler(this.db.service.newTransactionStateFromMQTT)
     this.mqtt.start()
-    await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
-    await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
+    // await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
+    // await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
 
 
 //TODO call specific function

@@ -1739,10 +1739,14 @@ export class NodeDatabaseService {
       //     //time:  //TODO how get all data from last day
       //   }
       // })
-      params = {
-          "date": timeStamp+"",
-          "entries": []
-        }
+
+      const hashingInfo = await this.tradeInfoForHashing()
+
+      params = hashingInfo.producer
+
+      hashingInfo.producer
+      hashingInfo.consumer
+      hashingInfo.prosumer
 
       // if(value.cell.type=="prosumer") {
       // params = {
@@ -1764,6 +1768,26 @@ export class NodeDatabaseService {
       //     entries:""
       //   }
       // }
+
+
+      //TIPS
+      // const dataForProducer = {
+      //   date: hashingInfo.producer.date,
+      //   producer: hashingInfo.producer.producer
+      // }
+
+
+     // TIPS
+      // const hash = '111'
+      // const address = '1223'
+      //
+      //
+      // await this.anchorRepository.insert({
+      //   address: address,
+      //   hashId: hash,
+      //   user: value,
+      //   time: hashingInfo.producer.date,
+      // })
 
       let url = "http://localhost:9505/timestamp/add/"
 try {

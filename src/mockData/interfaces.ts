@@ -122,6 +122,7 @@ interface ConsumerHashingInfo {
 }
 
 interface ProducerHashingInfo {
+  email: string
   date: number
   producer: Array<{
     energy: number
