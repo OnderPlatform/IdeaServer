@@ -66,17 +66,17 @@ export default function (endpoint: string): Promise<DataFromAMIGO> {
     let mocks = mockData
     mocks.producers.forEach(value => {
       value.time = new Date(Date.now())
-      value.energy += value.energy*Math.random()
-      value.power += value.power*Math.random()
+      value.energy = Math.random()
+      value.power = Math.random()
     })
     mocks.consumers.forEach(value => {
-      value.energy += value.energy*Math.random()
+      value.energy = Math.random()
       value.time = new Date(Date.now())
     })
     mocks.prosumers.forEach(value => {
       value.time = new Date(Date.now())
-      value.energyIn += value.energyIn*Math.random()
-      value.energyOut += value.energyOut*Math.random()
+      value.energyIn = Math.random()
+      value.energyOut = Math.random()
     })
     setTimeout(() => resolve(mocks), 1000)
   })

@@ -425,7 +425,7 @@ export class NodeDatabaseService {
         }
       })
 
-      let avPrice: number
+      let avPrice: number = 0
       if (prosumersWithNoPip.length)
         avPrice = prosumersWithNoPip.reduce((previousValue, currentValue) => previousValue + currentValue.price, 0)/prosumersWithNoPip.length
       else
@@ -477,7 +477,7 @@ export class NodeDatabaseService {
     }))
 
     // 3. Price: Working with prosumers
-    let priceForConsumerAndProsumer: number
+    let priceForConsumerAndProsumer: number = 0
     await Promise.all(data.prosumers.map(async value => {
       // Finding prosumer cell in database
       const cell = await this.cellRepository.findOneOrFail({
