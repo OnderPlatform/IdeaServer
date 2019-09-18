@@ -1742,55 +1742,54 @@ export class NodeDatabaseService {
 
       const hashingInfo = await this.tradeInfoForHashing()
 
-      params = hashingInfo.producer
-
-      hashingInfo.producer
-      hashingInfo.consumer
-      hashingInfo.prosumer
-
-      // if(value.cell.type=="prosumer") {
-      // params = {
-      //     date: timeStamp,
-      //     entries: ""
-      //   }
-      // }
+      // params = hashingInfo.producer
       //
-      // if(value.cell.type=="producer") {
-      // params = {
-      //     date: timeStamp,
-      //     entries:""
-      //   }
-      // }
-      //
-      // if(value.cell.type=="consumer") {
-      // params = {
-      //     date: timeStamp,
-      //     entries:""
-      //   }
-      // }
+      // hashingInfo.producer
+      // hashingInfo.consumer
+      // hashingInfo.prosumer
+      const hash = '111'
+      const address = '1223'
 
+      if(value.cell.type=="prosumer") {
+        params = hashingInfo.prosumer
+        await this.anchorRepository.insert({
+          address: address,
+          hashId: hash,
+          user: value,
+          time: hashingInfo.prosumer.date+""
+        })
+      }
+
+      if(value.cell.type=="producer") {
+        params = hashingInfo.producer
+        await this.anchorRepository.insert({
+          address: address,
+          hashId: hash,
+          user: value,
+          time: hashingInfo.producer.date+""
+        })
+      }
+
+      if(value.cell.type=="consumer") {
+        params = hashingInfo.consumer
+        await this.anchorRepository.insert({
+          address: address,
+          hashId: hash,
+          user: value,
+          time: hashingInfo.consumer.date+""
+        })
+      }
 
       //TIPS
-      // const dataForProducer = {
-      //   date: hashingInfo.producer.date,
-      //   producer: hashingInfo.producer.producer
-      // }
 
 
-     // TIPS
-      // const hash = '111'
-      // const address = '1223'
-      //
-      //
-      // await this.anchorRepository.insert({
-      //   address: address,
-      //   hashId: hash,
-      //   user: value,
-      //   time: hashingInfo.producer.date,
-      // })
+
+
+    console.log(params)
+
 
       let url = "http://localhost:9505/timestamp/add/"
-try {
+    try {
       let res = await axios.post(url, params);
 
       console.log(res.data);
@@ -1799,12 +1798,12 @@ try {
       console.log(params)
     }
       console.log(params)
-
+    }
       //TODO save hash and address
     }
 
 
-  }
+
 
   //TODO check function
 
