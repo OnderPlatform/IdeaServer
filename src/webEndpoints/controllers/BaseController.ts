@@ -397,7 +397,7 @@ export class BaseController {
 
 
       //Send the jwt in the response
-      ctx.response.body = token
+      ctx.response.body = { token }
     }
   };
 
