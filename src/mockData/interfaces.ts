@@ -307,4 +307,3 @@ export interface UserPrices {
     "price": number
   }>
 }
-

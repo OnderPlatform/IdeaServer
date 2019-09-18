@@ -89,6 +89,7 @@ private started: number
     console.log("Connected to the broker!")
     //TODO change to topic, # for
     this.Client!.subscribe("/testbed/+/contracts/+/progress")
+    this.Client!.subscribe("/testbed/+/contracts/progress")
     this.Client!.subscribe("/testbed/+/finance")
     this.Client!.on('message', this.topic_handler.bind(this))
   }
