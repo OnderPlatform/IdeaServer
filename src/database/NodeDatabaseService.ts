@@ -1717,7 +1717,9 @@ export class NodeDatabaseService {
 
 
   async makePostRequest() {
-    const newTransactions = await this.userRepository.find({})
+    const newTransactions = await this.userRepository.find({
+      relations: ['cell']
+    })
     let timeStamp = Date.now()
     let hash = ""
     let address = ""
