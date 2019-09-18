@@ -1,6 +1,5 @@
 import { EthAddresses } from './config'
 import { DataFromAMIGO } from './interfaces'
-import { Timestamp } from "typeorm";
 
 const mockData: DataFromAMIGO = {
   producers: [
@@ -21,28 +20,12 @@ const mockData: DataFromAMIGO = {
       energy: 212.3,
       power: 13.4,
       producerEthAddress: EthAddresses[2]
-    }
-  ],
-  consumers: [
-    {
-      time: new Date('2019-08-27 16:18:17.91525+03'),
-      energy: 9.0,
-      consumerEthAddress: EthAddresses[3]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
-      energy: 12.0,
-      consumerEthAddress: EthAddresses[4]
-    },
-    {
-      time: new Date('2019-08-27 16:18:17.91525+03'),
-      energy: 15.0,
-      consumerEthAddress: EthAddresses[5]
-    },
-    {
-      time: new Date('2019-08-27 16:18:17.91525+03'),
-      energy: 19.0,
-      consumerEthAddress: EthAddresses[6]
+      energy: 212.3,
+      power: 13.4,
+      producerEthAddress: EthAddresses[3]
     }
   ],
   prosumers: [
@@ -50,15 +33,39 @@ const mockData: DataFromAMIGO = {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energyIn: 7.0,
       energyOut: 9.0,
-      prosumerEthAddress: EthAddresses[7]
+      prosumerEthAddress: EthAddresses[4]
     },
     {
       time: new Date('2019-08-27 16:18:17.91525+03'),
       energyIn: 10.0,
       energyOut: 9.0,
-      prosumerEthAddress: EthAddresses[8]
+      prosumerEthAddress: EthAddresses[5]
+    },
+    {
+      time: new Date('2019-08-27 16:18:17.91525+03'),
+      energyIn: 7.0,
+      energyOut: 9.0,
+      prosumerEthAddress: EthAddresses[6]
+    },
+    {
+      time: new Date('2019-08-27 16:18:17.91525+03'),
+      energyIn: 10.0,
+      energyOut: 9.0,
+      prosumerEthAddress: EthAddresses[7]
     }
-  ]
+  ],
+  consumers: [
+    {
+      time: new Date('2019-08-27 16:18:17.91525+03'),
+      energy: 9.0,
+      consumerEthAddress: EthAddresses[8]
+    },
+    {
+      time: new Date('2019-08-27 16:18:17.91525+03'),
+      energy: 12.0,
+      consumerEthAddress: EthAddresses[9]
+    },
+  ],
 }
 
 export default function (endpoint: string): Promise<DataFromAMIGO> {

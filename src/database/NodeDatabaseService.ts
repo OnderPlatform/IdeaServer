@@ -5,10 +5,6 @@ import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
 import {
-  EthAddressesConsumers,
-  EthAddressesProducers,
-  EthAddressesProsumers,
-  EthAddressOperator,
   initialMockData
 } from "../mockData/config";
 
@@ -61,14 +57,14 @@ export class NodeDatabaseService {
       await Promise.all(initialMockData.consumers.map(value => {
         return this.cellRepository.insert({
           balance: value.balance,
-          ethAddress: value.consumerId,
+          ethAddress: value.ethAddress,
           name: value.name,
           type: 'consumer'
         })
       }))
       await this.cellRepository.insert({
         name: initialMockData.operator.name,
-        ethAddress: initialMockData.operator.operatorId,
+        ethAddress: initialMockData.operator.ethAddress,
         opCoef: initialMockData.operator.opCoef,
         balance: initialMockData.operator.balance,
         type: 'operator'
@@ -76,7 +72,7 @@ export class NodeDatabaseService {
 
       await Promise.all(initialMockData.producers.map(value => {
         return this.cellRepository.insert({
-          ethAddress: value.producerId,
+          ethAddress: value.ethAddress,
           name: value.name,
           initPower: value.initPower,
           initPrice: value.initPrice,
@@ -86,7 +82,7 @@ export class NodeDatabaseService {
       }))
       initialMockData.prosumers.map(value => {
         return this.cellRepository.insert({
-          ethAddress: value.prosumerId,
+          ethAddress: value.ethAddress,
           name: value.name,
           margin: value.margin,
           balance: value.balance,
@@ -235,7 +231,7 @@ export class NodeDatabaseService {
 
   async initialDataForOperator() {
     await this.cellRepository.insert({
-      ethAddress: EthAddressOperator,
+      ethAddress: initialMockData.operator.ethAddress,
       mrid: '_operator',
       name: 'Operator',
       balance: DEFAULT_BALANCE,
@@ -282,21 +278,21 @@ export class NodeDatabaseService {
       prosumers: prosumers.map((value, index) => {
         return {
           name: value.name,
-          ethAddress: EthAddressesProsumers[index],
+          ethAddress: initialMockData.prosumers[index].ethAddress,
           mrid: value.mrid
         }
       }),
       producers: producers.map((value, index) => {
         return {
           name: value.name,
-          ethAddress: EthAddressesProducers[index],
+          ethAddress: initialMockData.producers[index].ethAddress,
           mrid: value.mrid
         }
       }),
       consumers: consumers.map((value, index) => {
         return {
           name: value.name,
-          ethAddress: EthAddressesConsumers[index],
+          ethAddress: initialMockData.consumers[index].ethAddress,
           mrid: value.mrid
         }
       })
