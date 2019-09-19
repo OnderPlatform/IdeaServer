@@ -401,8 +401,8 @@ export class BaseController {
         //Try to validate the token and get data
 
 
-        //Send the jwt in the response
-      ctx.response.body = token
+      //Send the jwt in the response
+      ctx.response.body = { token }
     }
 
   };
