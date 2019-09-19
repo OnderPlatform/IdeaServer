@@ -36,7 +36,8 @@ export class BaseController {
     var pool = workerpool.pool('./src/workers/asyncWorker.js');
 
 
-    /* configure endpoints
+    /*
+    configure endpoints
     */
 
     // example: remove after implementation
@@ -56,7 +57,7 @@ export class BaseController {
       this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       excel.parse()
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
+      //this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
     })
 
     router.get('/download', async function (ctx) {
@@ -412,7 +413,7 @@ export class BaseController {
     const email = ctx.request.body.email
     const password = ctx.request.body.password
     const isAdmin = ctx.request.body.isAdmin
-    const ethAddress = ctx.request.body.ethAddrress
+    const ethAddress = ctx.request.body.ethAdrress
 
     if (!(email && password)) {
       ctx.response.status = 400

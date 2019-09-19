@@ -1720,7 +1720,7 @@ export class NodeDatabaseService {
     })
     for (const value of newTransactions) {
       // вытащить данны из переменной value и отправить в publishProgress
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
+      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12,7)
     }
 
 
@@ -1740,6 +1740,8 @@ export class NodeDatabaseService {
       relations: ['cell']
     })
 
+    console.log(users.length)
+
     for (const user of users) {
       const type = user.cell.type
       let anchoringData = {}
@@ -1747,29 +1749,29 @@ export class NodeDatabaseService {
       switch (type) {
         case 'producer': {
           anchoringData = {
-            date: preAnchoring.producer.date,
-            producer: preAnchoring.producer.producer.filter(value => value.email === user.email).map(value => {return {
-              energy: value.energy,
-              power: value.power
+            "date": ""+preAnchoring.producer.date,
+            "entries": preAnchoring.producer.producer.filter(value => value.email === user.email).map(value => {return {
+              "energy": ""+value.energy,
+              "power": ""+value.power
             }})
           }
           break;
         }
         case 'consumer': {
           anchoringData = {
-            date: preAnchoring.consumer.date,
-            consumer: preAnchoring.consumer.consumer.filter(value => value.email === user.email).map(value => {return {
-              energy: value.energy
+            "date": ""+preAnchoring.consumer.date,
+            "entries": preAnchoring.consumer.consumer.filter(value => value.email === user.email).map(value => {return {
+              "energy": ""+value.energy
             }})
           }
           break;
         }
         case 'prosumer': {
           anchoringData = {
-            date: preAnchoring.prosumer.date,
-            prosumer: preAnchoring.prosumer.prosumer.filter(value => value.email === user.email).map(value => {return {
-              energyIn: value.energyIn,
-              energyOut: value.energyOut
+            "date": ""+preAnchoring.prosumer.date,
+            "entries": preAnchoring.prosumer.prosumer.filter(value => value.email === user.email).map(value => {return {
+              "energyIn": ""+value.energyIn,
+              "energyOut": ""+value.energyOut
             }})
           }
           break;
@@ -1778,9 +1780,13 @@ export class NodeDatabaseService {
           throw new Error('unexpected type of cell')
         }
       }
-
-      const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData)
-      console.log('Response from anchor service: ', response)
+      console.log(JSON.stringify(anchoringData) )
+      const response = await axios.post('http://localhost:9505/timestamp/add/', JSON.stringify(anchoringData),{
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+      console.log('Response from anchor service: ', response.data)
       // todo: what to do with this response?
     }
   }

@@ -65,7 +65,7 @@ private started: number
 }"
   */
 
-  publishProgress(enode: number,contractID: number,amount: number, seller: string, contragent: string,delta: number) {
+  publishProgress(enode: number,contractID: number,amount: number, seller: string, contragent: string,price:number,delta: number) {
     console.log("publishProgress is hooked")
     let topic = "/testbed/enode"+enode+"/contracts/"+contractID+"/progress"
     let payload = {
@@ -75,7 +75,7 @@ private started: number
       amount: amount,
       seller:seller,
       contragent: contragent,
-      cost: 24.4,
+      cost: price,
       timeStamp: new Date().toISOString(),
       progress: 123.8,
       delta: delta,
