@@ -1688,7 +1688,6 @@ export class NodeDatabaseService {
 
     if(value.endsWith("progress")) {
       console.log("progress - mqtt")
-
       const newTransactions = await this.transactionRepository.find({
         where: {
           sentToMqtt: true

@@ -47,7 +47,7 @@ export default class Application {
       // await this.db.service.initialDataForOperator()
       await this.db.service.initMockData()
     }
-    this.mqtt.add_handler(this.db.service.newTransactionStateFromMQTT)
+    this.mqtt.add_handler((value: string, message: string) => this.db.service.newTransactionStateFromMQTT(value, message))
     this.mqtt.start()
     console.log("post data cron")
     //this.fetchingData()
@@ -58,7 +58,7 @@ export default class Application {
 
 
 //TODO call specific function
-cron.schedule('0 */15 * * * *', () => {
+cron.schedule('0 */1 * * * *', () => {
 console.log("fetch data cron")
 this.fetchingData()
 });
