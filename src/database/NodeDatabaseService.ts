@@ -32,6 +32,7 @@ import {
 import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
+import { Trade } from "./models";
 
 const DEFAULT_BALANCE = 999
 const DEFAULT_MARGIN = 5
@@ -1065,21 +1066,21 @@ export class NodeDatabaseService {
   async tradeInfoForHashing (): Promise<HashingInfo> {
     const tradeConsumerTableForLastDay = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias}::date = current_date - interval '1 day'`),
+        time: Raw(columnAlias => `(${columnAlias})::date = current_date - interval '1 day'`),
         type: 'consumer'
       },
       relations: ['cell']
     })
     const tradeProducerTableForLastDay = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias}::date = current_date - interval '1 day'`),
+        time: Raw(columnAlias => `(${columnAlias})::date = current_date - interval '1 day'`),
         type: 'producer'
       },
       relations: ['cell']
     })
     const tradeProsumerTableForLastDay = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias}::date = current_date - interval '1 day'`),
+        time: Raw(columnAlias => `(${columnAlias})::date = current_date - interval '1 day'`),
         type: 'prosumer'
       },
       relations: ['cell']
