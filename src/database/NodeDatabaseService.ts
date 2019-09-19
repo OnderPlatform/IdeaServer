@@ -1734,98 +1734,54 @@ export class NodeDatabaseService {
 
 
   async makePostRequest() {
-    const newTransactions = await this.userRepository.find({
+    const preAnchoring: HashingInfo = await this.tradeInfoForHashing()
+    const users = await this.userRepository.find({
       relations: ['cell']
     })
-    let timeStamp = Date.now()
-    let hash = ""
-    let address = ""
-    let params: any;
-    for (const value of newTransactions) {
-      // вытащить данны из переменной value и отправить в publishProgress
-      //TODO how create
-      // await this.anchorRepository.create({
-      //   user: value,
-      //   time: timeStamp,
-      //   hashId: hash,
-      //   address: address
-      // })
 
+    for (const user of users) {
+      const type = user.cell.type
+      let anchoringData = {}
 
-      // const some = await this.tradeRepository.find({
-      //   where: {
-      //     cell: value.id,
-      //     //time:  //TODO how get all data from last day
-      //   }
-      // })
-
-      const hashingInfo = await this.tradeInfoForHashing()
-
-      // params = hashingInfo.producer
-      //
-      // hashingInfo.producer
-      // hashingInfo.consumer
-      // hashingInfo.prosumer
-      const hash = '111'
-      const address = '1223'
-
-      if(value.cell.type=="prosumer") {
-        params = hashingInfo.prosumer
-        await this.anchorRepository.insert({
-          address: address,
-          hashId: hash,
-          user: value,
-          time: hashingInfo.prosumer.date+""
-        })
+      switch (type) {
+        case 'producer': {
+          anchoringData = {
+            date: preAnchoring.producer.date,
+            producer: preAnchoring.producer.producer.filter(value => value.email === user.email).map(value => {return {
+              energy: value.energy,
+              power: value.power
+            }})
+          }
+          break;
+        }
+        case 'consumer': {
+          anchoringData = {
+            date: preAnchoring.consumer.date,
+            consumer: preAnchoring.consumer.consumer.filter(value => value.email === user.email).map(value => {return {
+              energy: value.energy
+            }})
+          }
+          break;
+        }
+        case 'prosumer': {
+          anchoringData = {
+            date: preAnchoring.prosumer.date,
+            prosumer: preAnchoring.prosumer.prosumer.filter(value => value.email === user.email).map(value => {return {
+              energyIn: value.energyIn,
+              energyOut: value.energyOut
+            }})
+          }
+          break;
+        }
+        default: {
+          throw new Error('unexpected type of cell')
+        }
       }
 
-      if(value.cell.type=="producer") {
-        params = hashingInfo.producer
-        await this.anchorRepository.insert({
-          address: address,
-          hashId: hash,
-          user: value,
-          time: hashingInfo.producer.date+""
-        })
-      }
-
-      if(value.cell.type=="consumer") {
-        params = hashingInfo.consumer
-        await this.anchorRepository.insert({
-          address: address,
-          hashId: hash,
-          user: value,
-          time: hashingInfo.consumer.date+""
-        })
-      }
-
-      //TIPS
-
-
-
-
-    console.log(params)
-
-
-      let url = "http://localhost:9505/timestamp/add/"
-    try {
-      let res = await axios.post(url, params);
-
-      console.log(res.data);
-    } catch(e) {
-      console.log(e);
-      console.log(params)
+      const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData)
+      console.log('Response from anchor service: ', response)
     }
-      console.log(params)
-    }
-      //TODO save hash and address
-    }
-
-
-
-
-  //TODO check function
-
+  }
 
   async sendDataToAnchor() {
     //create anchor to appropriete user with appropriete data
