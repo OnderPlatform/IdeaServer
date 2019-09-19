@@ -110,8 +110,8 @@ export interface AlgorithmResult {
     producers: Array<TradeProducerEntry>,
     prosumers: Array<TradeProsumerEntry>
   },
-  prosumersEnergyAll: Array <ProsumerAndHisEnergyInAll>,
-  transactionTable: Array <TransactionEntry>,
+  prosumersEnergyAll: Array<ProsumerAndHisEnergyInAll>,
+  transactionTable: Array<TransactionEntry>,
 }
 
 interface ConsumerHashingInfo {

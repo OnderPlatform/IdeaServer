@@ -4,9 +4,7 @@ import { getCustomRepository, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
-import {
-  initialMockData
-} from "../mockData/config";
+import { initialMockData } from "../mockData/config";
 
 import {
   AdminAnchor,
@@ -32,7 +30,6 @@ import {
 import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
-import { Trade } from "./models";
 
 const DEFAULT_BALANCE = 999
 const DEFAULT_MARGIN = 5
@@ -41,14 +38,14 @@ const DEFAULT_INITPRICE = [0., 50., 100]
 const DEFAULT_INITPOWER = [0., 50., 100]
 
 export class NodeDatabaseService {
-  private readonly db: NodeDatabase
   public readonly cellRepository: CellRepository = getCustomRepository(CellRepository)
   public readonly tradeRepository: TradeRepository = getCustomRepository(TradeRepository)
   public readonly transactionRepository: TransactionRepository = getCustomRepository(TransactionRepository)
   public readonly userRepository: UserRepository = getCustomRepository(UserRepository)
   public readonly anchorRepository: AnchorRepository = getCustomRepository(AnchorRepository)
+  private readonly db: NodeDatabase
 
-  constructor (db: NodeDatabase) {
+  constructor(db: NodeDatabase) {
     this.db = db
   }
 
@@ -161,8 +158,8 @@ export class NodeDatabaseService {
       const prosumerPreparedData: ProsumerData = {
         time: new Date(Date.now()),
         prosumerEthAddress: prosumerEntry.ethAddress,
-        energyIn: energyIn/60,  // kV*h
-        energyOut: energyOut/60
+        energyIn: energyIn / 60,  // kV*h
+        energyOut: energyOut / 60
       }
 
       return prosumerPreparedData
@@ -185,7 +182,7 @@ export class NodeDatabaseService {
 
       const consumerPreparedData: ConsumerData = {
         time: new Date(Date.now()),
-        energy: energy/60,
+        energy: energy / 60,
         consumerEthAddress: consumerEntry.ethAddress
       }
 
@@ -210,7 +207,7 @@ export class NodeDatabaseService {
       const power = energy //todo: where should we take the power?
       const producerPreparedData: ProducerData = {
         power: power,
-        energy: energy/60,
+        energy: energy / 60,
         time: new Date(Date.now()),
         producerEthAddress: producerEntry.ethAddress
       }
@@ -424,7 +421,7 @@ export class NodeDatabaseService {
 
       let avPrice: number = 0
       if (prosumersWithNoPip.length)
-        avPrice = prosumersWithNoPip.reduce((previousValue, currentValue) => previousValue + currentValue.price, 0)/prosumersWithNoPip.length
+        avPrice = prosumersWithNoPip.reduce((previousValue, currentValue) => previousValue + currentValue.price, 0) / prosumersWithNoPip.length
       else
         avPrice = 0
 
@@ -462,8 +459,8 @@ export class NodeDatabaseService {
         index = -1
       else
         index = cell.initPower.reduce((previousValue, currentValue) => {
-        return previousValue + (value.power < currentValue ? 1 : 0)
-      }, 0)
+          return previousValue + (value.power < currentValue ? 1 : 0)
+        }, 0)
       const price = cell.initPrice[index]
 
       await this.tradeRepository.update({
@@ -555,8 +552,7 @@ export class NodeDatabaseService {
         throw new Error('pip has type different from boolean')
       if (lastProsumerTrade.pip) {
         pay = 0
-      }
-      else {
+      } else {
         if (typeof lastProsumerTrade.energyIn != "number")
           throw new Error('energyIn is null')
         if (typeof lastProsumerTrade.energyOut != "number")
@@ -577,7 +573,7 @@ export class NodeDatabaseService {
             throw new Error('energyIn is null')
           return previousValue + currentValue.energyIn
         }, 0)
-        pay = priceForConsumerAndProsumer*((lastProsumerTrade.energyIn - lastProsumerTrade.energyOut) + lastProsumerTrade.energyIn*(S3 + S5 - S6 - S7)  / (S6 + S7))
+        pay = priceForConsumerAndProsumer * ((lastProsumerTrade.energyIn - lastProsumerTrade.energyOut) + lastProsumerTrade.energyIn * (S3 + S5 - S6 - S7) / (S6 + S7))
       }
 
       await this.tradeRepository.update({
@@ -638,9 +634,9 @@ export class NodeDatabaseService {
         return previousValue + currentValue.energyIn
       }, 0)
 
-      const pay = priceForConsumerAndProsumer * (lastConsumerInTradeTable.energy + lastConsumerInTradeTable.energy*(S1 + S2 - S3 - S4) / (S3 + S4))
+      const pay = priceForConsumerAndProsumer * (lastConsumerInTradeTable.energy + lastConsumerInTradeTable.energy * (S1 + S2 - S3 - S4) / (S3 + S4))
       await this.tradeRepository.update({
-        id: lastConsumerInTradeTable.id
+          id: lastConsumerInTradeTable.id
         },
         {
           price: priceForConsumerAndProsumer,
@@ -657,7 +653,7 @@ export class NodeDatabaseService {
     if (typeof operator.opCoef != "number")
       throw new Error('opCoef is null')
     // From every consumer to every producer
-    for(let i = 0; i < data.consumers.length; i++) {
+    for (let i = 0; i < data.consumers.length; i++) {
       for (let j = 0; j < data.producers.length; j++) {
         const consumer = await this.cellRepository.findOneOrFail({
           where: {
@@ -717,7 +713,7 @@ export class NodeDatabaseService {
         if (typeof producerTrade.energy != "number")
           throw new Error('energy is null')
 
-        const cost = consumerTrade.pay * (1-operator.opCoef/100)*producerTrade.energy / (S1 + S2)
+        const cost = consumerTrade.pay * (1 - operator.opCoef / 100) * producerTrade.energy / (S1 + S2)
         const price = consumerTrade.price
 
         if (price) {
@@ -799,7 +795,7 @@ export class NodeDatabaseService {
           if (typeof producerTrade.energy != "number")
             throw new Error('energy is null')
 
-          const cost = prosumerTrade.pay*(1-operator.opCoef/100)*producerTrade.energy / (S1 + S2)
+          const cost = prosumerTrade.pay * (1 - operator.opCoef / 100) * producerTrade.energy / (S1 + S2)
           const price = prosumerTrade.price
 
           if (price) {
@@ -883,7 +879,7 @@ export class NodeDatabaseService {
           if (typeof prosumerTrade.energyOut != "number")
             throw new Error('energyOut is null')
 
-          const cost = consumerTrade.pay * (1-operator.opCoef/100)*(prosumerTrade.energyOut-prosumerTrade.energyIn) / (S1 + S2)
+          const cost = consumerTrade.pay * (1 - operator.opCoef / 100) * (prosumerTrade.energyOut - prosumerTrade.energyIn) / (S1 + S2)
           const price = consumerTrade.price
 
           if (price) {
@@ -902,7 +898,7 @@ export class NodeDatabaseService {
 
     // From every prosumer (pip = 0) to every prosumer (pip = 1)
     for (let i = 0; i < data.prosumers.length; i++) {
-      for (let j = i+1; j < data.prosumers.length; j++) {
+      for (let j = i + 1; j < data.prosumers.length; j++) {
         const prosumer1 = await this.cellRepository.findOneOrFail({
           where: {
             ethAddress: data.prosumers[i].prosumerEthAddress
@@ -968,7 +964,7 @@ export class NodeDatabaseService {
           if (typeof prosumer2Trade.energyIn != "number")
             throw new Error('prosumer2 has null enenrgyIn')
 
-          const cost = prosumer1Trade.pay*(1-operator.opCoef/100)*(prosumer2Trade.energyOut - prosumer2Trade.energyIn) / (S1 + S2)
+          const cost = prosumer1Trade.pay * (1 - operator.opCoef / 100) * (prosumer2Trade.energyOut - prosumer2Trade.energyIn) / (S1 + S2)
           const price = prosumer1Trade.price
           const time = new Date(Date.now()).toISOString()
           const amount = cost / price
@@ -1007,7 +1003,7 @@ export class NodeDatabaseService {
       if (typeof operator.opCoef != "number")
         throw new Error('opCoef is null')
 
-      const cost = consumerTrade.pay*(operator.opCoef/100)
+      const cost = consumerTrade.pay * (operator.opCoef / 100)
       const price = consumerTrade.price
 
       if (price) {
@@ -1045,7 +1041,7 @@ export class NodeDatabaseService {
         if (typeof prosumerTrade.pay != 'number')
           throw new Error('pay is null')
 
-        const cost = prosumerTrade.pay*operator.opCoef/100
+        const cost = prosumerTrade.pay * operator.opCoef / 100
         const price = prosumerTrade.price
         const time = new Date(Date.now()).toISOString()
 
@@ -1063,7 +1059,7 @@ export class NodeDatabaseService {
     }))
   }
 
-  async tradeInfoForHashing (): Promise<HashingInfo> {
+  async tradeInfoForHashing(): Promise<HashingInfo> {
     const tradeConsumerTableForLastDay = await this.tradeRepository.find({
       where: {
         time: Raw(columnAlias => `(${columnAlias})::date = current_date - interval '1 day'`),
@@ -1307,9 +1303,7 @@ export class NodeDatabaseService {
 
 
     if (!userTradeTable.length) {
-      return {
-
-      }
+      return {}
     }
 
     const userTradeTable1Day = await this.tradeRepository.find({
@@ -1362,8 +1356,7 @@ export class NodeDatabaseService {
       if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price + previousValue
-    }, 0)/userTradeTable.length
-
+    }, 0) / userTradeTable.length
 
 
     return {
@@ -1433,9 +1426,7 @@ export class NodeDatabaseService {
       relations: ['cell']
     })
     if (!userTradeTable.length) {
-      return {
-
-      }
+      return {}
     }
 
     const userTradeTable1Day = await this.tradeRepository.find({
@@ -1469,7 +1460,7 @@ export class NodeDatabaseService {
       if (typeof currentValue.energy != "number")
         throw new Error('energy is null')
       return currentValue.energy + previousValue
-    }, 0)/userTradeTable.length
+    }, 0) / userTradeTable.length
 
 
     if (typeof userTradeTable[0].price != "number")
@@ -1488,8 +1479,7 @@ export class NodeDatabaseService {
       if (typeof currentValue.price != "number")
         throw new Error('price is null')
       return currentValue.price + previousValue
-    }, 0)/userTradeTable.length
-
+    }, 0) / userTradeTable.length
 
 
     return {
@@ -1557,9 +1547,7 @@ export class NodeDatabaseService {
     })
 
     if (!transactions.length) {
-      return {
-
-      }
+      return {}
     }
 
     return {
@@ -1594,9 +1582,7 @@ export class NodeDatabaseService {
     })
 
     if (!userAnchors.length) {
-      return {
-
-      }
+      return {}
     }
 
     return {
@@ -1643,6 +1629,7 @@ export class NodeDatabaseService {
       approved: approved
     })
   }
+
   /*
   "Раз в 20 секунд
 
@@ -1663,9 +1650,9 @@ export class NodeDatabaseService {
 
   async newTransactionStateFromMQTT(value: string, message: string) {
     console.log("Receive new message from handler - %o ", message)
-    if(value.endsWith("finance")) {
+    if (value.endsWith("finance")) {
       console.log("finance - mqtt")
-      if(value.includes('enode1')) {
+      if (value.includes('enode1')) {
         //TODO added all nodes
         //TODO add in database in specific node info
         let obj = JSON.parse(message);
@@ -1675,18 +1662,18 @@ export class NodeDatabaseService {
             name: "enode1"
           }
         })
-      for (const value of newTransactions) {
-        await this.cellRepository.update({
-          id: value.id
-        }, {
-          balance: obj.value
-        })
-      }
+        for (const value of newTransactions) {
+          await this.cellRepository.update({
+            id: value.id
+          }, {
+            balance: obj.value
+          })
+        }
 
       }
     }
 
-    if(value.endsWith("progress")) {
+    if (value.endsWith("progress")) {
       console.log("progress - mqtt")
       const newTransactions = await this.transactionRepository.find({
         where: {
@@ -1694,19 +1681,19 @@ export class NodeDatabaseService {
         },
         relations: ['from', 'to']
       })
-      if(value.includes('enode1')) {
-      let obj = JSON.parse(message);
-      for (const value of newTransactions) {
-        // вытащить данны из переменной value и отправить в publishProgress
-        if(obj.seller==value.from && obj.contragent==value.to){
-          await this.transactionRepository.update({
-            id: value.id
-          }, {
-            approved: obj.payment_state
-          })
+      if (value.includes('enode1')) {
+        let obj = JSON.parse(message);
+        for (const value of newTransactions) {
+          // вытащить данны из переменной value и отправить в publishProgress
+          if (obj.seller == value.from && obj.contragent == value.to) {
+            await this.transactionRepository.update({
+              id: value.id
+            }, {
+              approved: obj.payment_state
+            })
+          }
         }
       }
-    }
     }
   }
 
@@ -1719,7 +1706,7 @@ export class NodeDatabaseService {
     })
     for (const value of newTransactions) {
       // вытащить данны из переменной value и отправить в publishProgress
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12,7)
+      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12, 7)
     }
 
 
@@ -1748,30 +1735,36 @@ export class NodeDatabaseService {
       switch (type) {
         case 'producer': {
           anchoringData = {
-            "date": ""+preAnchoring.producer.date,
-            "entries": preAnchoring.producer.producer.filter(value => value.email === user.email).map(value => {return {
-              "energy": ""+value.energy,
-              "power": ""+value.power
-            }})
+            "date": "" + preAnchoring.producer.date,
+            "entries": preAnchoring.producer.producer.filter(value => value.email === user.email).map(value => {
+              return {
+                "energy": "" + value.energy,
+                "power": "" + value.power
+              }
+            })
           }
           break;
         }
         case 'consumer': {
           anchoringData = {
-            "date": ""+preAnchoring.consumer.date,
-            "entries": preAnchoring.consumer.consumer.filter(value => value.email === user.email).map(value => {return {
-              "energy": ""+value.energy
-            }})
+            "date": "" + preAnchoring.consumer.date,
+            "entries": preAnchoring.consumer.consumer.filter(value => value.email === user.email).map(value => {
+              return {
+                "energy": "" + value.energy
+              }
+            })
           }
           break;
         }
         case 'prosumer': {
           anchoringData = {
-            "date": ""+preAnchoring.prosumer.date,
-            "entries": preAnchoring.prosumer.prosumer.filter(value => value.email === user.email).map(value => {return {
-              "energyIn": ""+value.energyIn,
-              "energyOut": ""+value.energyOut
-            }})
+            "date": "" + preAnchoring.prosumer.date,
+            "entries": preAnchoring.prosumer.prosumer.filter(value => value.email === user.email).map(value => {
+              return {
+                "energyIn": "" + value.energyIn,
+                "energyOut": "" + value.energyOut
+              }
+            })
           }
           break;
         }
@@ -1779,12 +1772,12 @@ export class NodeDatabaseService {
           throw new Error('unexpected type of cell')
         }
       }
-      console.log(JSON.stringify(anchoringData) )
-      const response = await axios.post('http://localhost:9505/timestamp/add/', JSON.stringify(anchoringData),{
+      console.log(JSON.stringify(anchoringData))
+      const response = await axios.post('http://localhost:9505/timestamp/add/', JSON.stringify(anchoringData), {
         headers: {
-            'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
         }
-    })
+      })
       console.log('Response from anchor service: ', response.data)
       // todo: what to do with this response?
     }

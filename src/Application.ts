@@ -10,20 +10,11 @@ export default class Application {
   private readonly db: NodeDatabase
   private readonly mqtt: mqtt_cl.ClientMQTT
 
-  fetchingData = async () => {
-    const data = await fetchMocks('endpoint')
-    await this.db.service.handleDataFromAMIGO(data)
-    await this.db.service.sendNewTransactionsToMQTT() // todo: CALL THIS FUNCTION AFTER PREVIOUS
- }
-
- postData = async () => {
-    await this.db.service.makePostRequest()
-}
-  constructor () {
+  constructor() {
     this.mqtt = new mqtt_cl.ClientMQTT()
     this.db = new NodeDatabase({
       'type': 'postgres',
-      'host':  config.hostDB,
+      'host': config.hostDB,
       'port': config.portDB,
       'username': config.usernameDB,
       'password': config.passwordDB,
@@ -37,7 +28,17 @@ export default class Application {
     this.web = new WebServer(config.serverPort, config.serverUrl, this.db)
   }
 
-  async start (): Promise<void> {
+  fetchingData = async () => {
+    const data = await fetchMocks('endpoint')
+    await this.db.service.handleDataFromAMIGO(data)
+    await this.db.service.sendNewTransactionsToMQTT() // todo: CALL THIS FUNCTION AFTER PREVIOUS
+  }
+
+  postData = async () => {
+    await this.db.service.makePostRequest()
+  }
+
+  async start(): Promise<void> {
     await this.web.start()
     await this.db.initConnection()
     // await this.db.service.initMockData()
@@ -52,18 +53,18 @@ export default class Application {
     console.log("post data cron")
     //this.fetchingData()
     //this.fetchingData()
-          this.postData()
+    this.postData()
     // await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
     // await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
 
 
 //TODO call specific function
-cron.schedule('0 */1 * * * *', () => {
-console.log("fetch data cron")
-this.fetchingData()
-});
+    cron.schedule('0 */1 * * * *', () => {
+      console.log("fetch data cron")
+      this.fetchingData()
+    });
     cron.schedule("0 0 0 * * *'", () => {
-console.log("post data cron")
+      console.log("post data cron")
       this.postData()
     })
   }
