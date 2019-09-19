@@ -59,7 +59,7 @@ export default class Application {
 
 
 //TODO call specific function
-    cron.schedule('0 */1 * * * *', () => {
+    cron.schedule('0 */15 * * * *', () => {
       console.log("fetch data cron")
       this.fetchingData()
     });
