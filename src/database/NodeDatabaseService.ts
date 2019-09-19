@@ -1780,6 +1780,7 @@ export class NodeDatabaseService {
 
       const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData)
       console.log('Response from anchor service: ', response)
+      // todo: what to do with this response?
     }
   }
 
