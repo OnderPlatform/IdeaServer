@@ -77,10 +77,9 @@ export class BaseController {
   }
 
   setCorsHeaders(ctx: Router.IRouterContext) {
-    //ctx.response.set('Access-Control-Allow-Origin', '*')
+    ctx.response.set('Access-Control-Allow-Origin', '*')
     ctx.response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
     ctx.response.set('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS')
-    ctx.response.status = 200
   }
 
   async findEthAddressByEmail(email: string): Promise<string> {
@@ -199,7 +198,24 @@ export class BaseController {
           ctx.response.body = await this.db.service.adminConsumptions()
         }
       } else {
-        ctx.response.body = await this.db.service.userConsumption(who)
+        const cell = await this.db.service.cellRepository.findOneOrFail({
+          where: {
+            ethAddress: who
+          }
+        })
+        switch (cell.type) {
+          case "consumer": {
+            ctx.response.body = await this.db.service.userConsumption(who)
+            break;
+          }
+          case "prosumer": {
+            ctx.response.body = await this.db.service.userProsumerConsumption(who)
+            break;
+          }
+          default: {
+            ctx.response.body = "user\'s cell type and requested type of data doesn\'t match"
+          }
+        }
       }
       ctx.response.status = 200
     } catch (e) {
@@ -230,7 +246,25 @@ export class BaseController {
           ctx.response.body = await this.db.service.adminProductions()
         }
       } else {
-        ctx.response.body = await this.db.service.userProduction(who)
+        const cell = await this.db.service.cellRepository.findOneOrFail({
+          where: {
+            ethAddress: who
+          }
+        })
+        switch (cell.type) {
+          case "producer": {
+            ctx.response.body = await this.db.service.userProduction(who)
+            break
+          }
+          case "prosumer": {
+            ctx.response.body = await this.db.service.userProsumerProduction(who)
+            break
+          }
+          default: {
+            ctx.response.body = "user\'s cell type and requested type of data doesn\'t match"
+            break
+          }
+        }
       }
 
 
