@@ -10,6 +10,7 @@
     "rerun": "yarn build; yarn start"
   },
   "dependencies": {
+    "@koa/cors": "2",
     "@types/bcryptjs": "^2.4.2",
     "@types/body-parser": "^1.17.1",
     "@types/cors": "^2.8.6",

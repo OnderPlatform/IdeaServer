@@ -8,6 +8,12 @@ import { getRepository } from "typeorm";
 import { User } from "../../database/models/User";
 import config from "../../config/config";
 
+type UserInfo = {
+  userId: number,
+  email: string,
+  isAdmin: boolean,
+}
+
 export class BaseController {
   public readonly db: NodeDatabase
 
@@ -53,7 +59,6 @@ export class BaseController {
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-      this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       excel.parse()
       //this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
@@ -76,12 +81,6 @@ export class BaseController {
     return router
   }
 
-  setCorsHeaders(ctx: Router.IRouterContext) {
-    //ctx.response.set('Access-Control-Allow-Origin', '*')
-    ctx.response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
-    ctx.response.set('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS')
-    ctx.response.status = 200
-  }
 
   async findEthAddressByEmail(email: string): Promise<string> {
     const cell = await this.db.service.userRepository.findOneOrFail({
@@ -94,7 +93,6 @@ export class BaseController {
   }
 
   async getAdminTransactions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -104,7 +102,6 @@ export class BaseController {
   }
 
   async getAdminConsumptions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -114,7 +111,6 @@ export class BaseController {
   }
 
   async getAdminProductions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -141,17 +137,14 @@ export class BaseController {
   // }
 
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     ctx.response.status = 501
   }
 
   getAdminExcelTransaction(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     ctx.response.status = 501
   }
 
   async getAdminAnchors(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -176,7 +169,6 @@ export class BaseController {
   }
 
   async getUserConsumptions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -208,7 +200,6 @@ export class BaseController {
   }
 
   async getUserProductions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -241,7 +232,6 @@ export class BaseController {
   }
 
   async getUserTransactions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -274,7 +264,6 @@ export class BaseController {
   }
 
   async getUserAnchors(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -307,7 +296,6 @@ export class BaseController {
   }
 
   async getUserExcelEnergy(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -322,7 +310,6 @@ export class BaseController {
   }
 
   async getUserExcelTransaction(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -337,7 +324,6 @@ export class BaseController {
   }
 
   async postUserPrice(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -378,10 +364,11 @@ export class BaseController {
     }
     var token = ""
     if (user != undefined && user.password == password) {
+      let userInfo: UserInfo = { userId: user.id, email: user.email, isAdmin: false };
       if (user.isAdmin) {
         //Sing JWT, valid for 1 hour
         token = jwt.sign(
-          {userId: user.id, email: user.email},
+          { ...userInfo, isAdmin: true },
           config.adminSecret,
           {expiresIn: "10m"}
         );
@@ -389,7 +376,7 @@ export class BaseController {
         console.log("admin")
       } else {
         token = jwt.sign(
-          {userId: user.id, email: user.email},
+          userInfo,
           user.email,
           {expiresIn: "10m"}
         );
