@@ -181,7 +181,6 @@ export class BaseController {
       return
     }
     try {
-      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
@@ -198,6 +197,7 @@ export class BaseController {
           ctx.response.body = await this.db.service.adminConsumptions()
         }
       } else {
+        const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
         const cell = await this.db.service.cellRepository.findOneOrFail({
           where: {
             ethAddress: who
@@ -230,7 +230,6 @@ export class BaseController {
       return
     }
     try {
-      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
@@ -240,12 +239,14 @@ export class BaseController {
       if (isAdmin) {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
+        console.log("discoveringuser: ", discoveringuser)
         if (discoveringuser) {
           ctx.response.body = await this.db.service.userProduction(discoveringuser)
         } else {
           ctx.response.body = await this.db.service.adminProductions()
         }
       } else {
+        const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
         const cell = await this.db.service.cellRepository.findOneOrFail({
           where: {
             ethAddress: who
