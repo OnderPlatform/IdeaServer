@@ -1950,10 +1950,12 @@ export class NodeDatabaseService {
       },
       relations: ['from', 'to']
     })
-    for (const value of newTransactions) {
+    // for (const value of newTransactions) {
       // вытащить данны из переменной value и отправить в publishProgress
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12, 7)
-    }
+      this.db.mqtt.publishProgress(6, 1, 10, "Agent6", "Agent7", 1, 1)
+      this.db.mqtt.publishProgress(7, 1, 10, "Agent6", "Agent7", 1, 1)
+      //this.db.mqtt.publishProgress(1, 1, 200, "Agent2", "Agent1", 1, 2)
+    // }
 
 
     for (const value of newTransactions) {

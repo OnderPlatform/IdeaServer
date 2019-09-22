@@ -51,9 +51,11 @@ export default class Application {
     this.mqtt.add_handler((value: string, message: string) => this.db.service.newTransactionStateFromMQTT(value, message))
     this.mqtt.start()
     console.log("post data cron")
+    this.fetchingData()
     //this.fetchingData()
     //this.fetchingData()
-    this.postData()
+    //this.postData()
+    //this.fetchingData()
     // await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
     // await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
 
