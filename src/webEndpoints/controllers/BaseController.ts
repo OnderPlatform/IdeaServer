@@ -61,7 +61,7 @@ export class BaseController {
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
       excel.parse()
-      //this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5)
+      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5,7)
     })
 
     router.get('/download', async function (ctx) {

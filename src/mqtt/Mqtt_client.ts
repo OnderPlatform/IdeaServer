@@ -28,15 +28,24 @@ private started: number
   //   protocol: 'mqtts'
   // }
     this.options = {
-      port: 80,
-      host: "35.224.129.238",
-      clientId: makeid(20),
-      username: "user1",
-      password: "jellyfish",
-      keepalive: 60,
-      reconnectPeriod: 1000,
-      rejectUnauthorized: false,
-      protocol: 'mqtt'
+    // port: 80,
+    // host: "35.224.129.238",
+    // clientId: makeid(20),
+    // username: "user1",
+    // password: "jellyfish",
+    // keepalive: 60,
+    // reconnectPeriod: 1000,
+    // rejectUnauthorized: false,
+    // protocol: 'mqtt'
+    port: 8883,
+    host: "mqtt-stage.rnd.rtsoft.ru",
+    clientId: makeid(20),
+    username: "user1",
+    password: "jejcoilld7493",
+    keepalive: 60,
+    reconnectPeriod: 1000,
+    rejectUnauthorized: false,
+    protocol: 'mqtts'
     }
     this.started = 0
   }
@@ -69,7 +78,7 @@ private started: number
     console.log("publishProgress is hooked")
     let topic = "/testbed/enode"+enode+"/contracts/"+contractID+"/progress"
     let payload = {
-      id: "enode"+enode,
+      id: contractID,
       port: 1,
       mode: 1,
       amount: amount,
@@ -77,9 +86,9 @@ private started: number
       contragent: contragent,
       cost: price,
       timeStamp: new Date().toISOString(),
-      progress: 123.8,
+      progress: 1,
       delta: delta,
-      progress_percent:1
+      progress_percent:50
     }
     this.Client!.publish(topic, JSON.stringify(payload))
   }
