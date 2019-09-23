@@ -174,7 +174,6 @@ export class BaseController {
       return
     }
     try {
-      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
@@ -191,7 +190,25 @@ export class BaseController {
           ctx.response.body = await this.db.service.adminConsumptions()
         }
       } else {
-        ctx.response.body = await this.db.service.userConsumption(who)
+        const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+        const cell = await this.db.service.cellRepository.findOneOrFail({
+          where: {
+            ethAddress: who
+          }
+        })
+        switch (cell.type) {
+          case "consumer": {
+            ctx.response.body = await this.db.service.userConsumption(who)
+            break;
+          }
+          case "prosumer": {
+            ctx.response.body = await this.db.service.userProsumerConsumption(who)
+            break;
+          }
+          default: {
+            ctx.response.body = "user\'s cell type and requested type of data doesn\'t match"
+          }
+        }
       }
       ctx.response.status = 200
     } catch (e) {
@@ -205,7 +222,6 @@ export class BaseController {
       return
     }
     try {
-      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
@@ -215,13 +231,33 @@ export class BaseController {
       if (isAdmin) {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
+        console.log("discoveringuser: ", discoveringuser)
         if (discoveringuser) {
           ctx.response.body = await this.db.service.userProduction(discoveringuser)
         } else {
           ctx.response.body = await this.db.service.adminProductions()
         }
       } else {
-        ctx.response.body = await this.db.service.userProduction(who)
+        const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+        const cell = await this.db.service.cellRepository.findOneOrFail({
+          where: {
+            ethAddress: who
+          }
+        })
+        switch (cell.type) {
+          case "producer": {
+            ctx.response.body = await this.db.service.userProduction(who)
+            break
+          }
+          case "prosumer": {
+            ctx.response.body = await this.db.service.userProsumerProduction(who)
+            break
+          }
+          default: {
+            ctx.response.body = "user\'s cell type and requested type of data doesn\'t match"
+            break
+          }
+        }
       }
 
 

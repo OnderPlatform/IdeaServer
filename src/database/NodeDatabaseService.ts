@@ -1286,6 +1286,252 @@ export class NodeDatabaseService {
     })
   }
 
+  async userProsumerConsumption(cellEthAddress: string): Promise<UserConsumption | {}> {
+    const userCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+
+    const userTradeTable = await this.tradeRepository.find({
+      where: {
+        type: 'prosumer',
+        cell: userCell
+      },
+      relations: ['cell']
+    })
+
+    if (!userTradeTable.length) {
+      return {}
+    }
+
+    const userTradeTable1Day = await this.tradeRepository.find({
+      where: {
+        type: 'prosumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+      }
+    })
+    const userTradeTable30Day = await this.tradeRepository.find({
+      where: {
+        type: 'prosumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+      }
+    })
+    if (typeof userTradeTable[0].energyIn != "number")
+      throw new Error('user trade table seems to be empty')
+    const minE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.energyIn != "number")
+        throw new Error('energyIn is null')
+      return currentValue.energyIn < previousValue ? currentValue.energyIn : previousValue
+    }, userTradeTable[0].energyIn)
+    const maxE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.energyIn != "number")
+        throw new Error('energyIn is null')
+      return currentValue.energyIn > previousValue ? currentValue.energyIn : previousValue
+    }, userTradeTable[0].energyIn)
+    const avgE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.energyIn != "number")
+        throw new Error('energyIn is null')
+      return currentValue.energyIn + previousValue
+    }, 0) / userTradeTable.length
+
+    if (typeof userTradeTable[0].price != "number")
+      throw new Error('user trade table seems to be empty')
+    const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.price != "number")
+        throw new Error('price is null')
+      return currentValue.price < previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.price != "number")
+        throw new Error('price is null')
+      return currentValue.price > previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.price != "number")
+        throw new Error('price is null')
+      return currentValue.price + previousValue
+    }, 0) / userTradeTable.length
+
+
+    return {
+      minEnergy: minE,
+      maxEnergy: maxE,
+      averageEnergy: avgE,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      averagePrice: avgPrice,
+      energy_today: userTradeTable1Day.map(value => {
+        if (typeof value.energyIn != "number")
+          throw new Error('null energyIn')
+        return {
+          date: value.time,
+          energy: value.energyIn
+        }
+      }),
+      energy_30_day: userTradeTable30Day.map(value => {
+        if (typeof value.energyIn != "number")
+          throw new Error('null energyIn')
+        return {
+          date: value.time,
+          energy: value.energyIn
+        }
+      }),
+      price_today: userTradeTable1Day.map(value => {
+        if (typeof value.price != "number")
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      price_30_day: userTradeTable30Day.map(value => {
+        if (typeof value.price != "number")
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      consumption_peers: userTradeTable.map(value => {
+        if (typeof value.energyIn != "number")
+          throw new Error('null energyIn')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance,
+          bought: value.energyIn,
+          price: value.price
+        }
+      })
+    }
+  }
+
+  async userProsumerProduction(cellEthAddress: string): Promise<UserProduction | {}> {
+    const userCell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+    const userTradeTable = await this.tradeRepository.find({
+      where: {
+        type: 'prosumer',
+        cell: userCell
+      },
+      relations: ['cell']
+    })
+    if (!userTradeTable.length) {
+      return {}
+    }
+
+    const userTradeTable1Day = await this.tradeRepository.find({
+      where: {
+        type: 'prosumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+      }
+    })
+    const userTradeTable30Day = await this.tradeRepository.find({
+      where: {
+        type: 'prosumer',
+        cell: userCell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+      }
+    })
+
+    if (!userTradeTable[0].energyOut)
+      throw new Error('user trade table seems to be empty')
+    const minE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.energyOut != "number")
+        throw new Error('energyOut is null')
+      return currentValue.energyOut < previousValue ? currentValue.energyOut : previousValue
+    }, userTradeTable[0].energyOut)
+    const maxE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.energyOut != "number")
+        throw new Error('energyOut is null')
+      return currentValue.energyOut > previousValue ? currentValue.energyOut : previousValue
+    }, userTradeTable[0].energyOut)
+    const avgE = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.energyOut != "number")
+        throw new Error('energyOut is null')
+      return currentValue.energyOut + previousValue
+    }, 0) / userTradeTable.length
+
+
+    if (typeof userTradeTable[0].price != "number")
+      throw new Error('user trade table seems to be empty')
+    const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.price != "number")
+        throw new Error('price is null')
+      return currentValue.price < previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.price != "number")
+        throw new Error('price is null')
+      return currentValue.price > previousValue ? currentValue.price : previousValue
+    }, userTradeTable[0].price)
+    const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
+      if (typeof currentValue.price != "number")
+        throw new Error('price is null')
+      return currentValue.price + previousValue
+    }, 0) / userTradeTable.length
+
+
+    return {
+      minEnergy: minE,
+      maxEnergy: maxE,
+      averageEnergy: avgE,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      averagePrice: avgPrice,
+      energy_today: userTradeTable1Day.map(value => {
+        if (typeof value.energyOut != "number")
+          throw new Error('null energyOut')
+        return {
+          date: value.time,
+          energy: value.energyOut
+        }
+      }),
+      energy_30_day: userTradeTable30Day.map(value => {
+        if (typeof value.energyOut != "number")
+          throw new Error('null energyOut')
+        return {
+          date: value.time,
+          energy: value.energyOut
+        }
+      }),
+      price_today: userTradeTable1Day.map(value => {
+        if (typeof value.price != "number")
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      price_30_day: userTradeTable30Day.map(value => {
+        if (typeof value.price != "number")
+          throw new Error('null price')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      production_peers: userTradeTable.map(value => {
+        if (typeof value.energyOut != "number")
+          throw new Error('null energy')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance,
+          sold: value.energyOut,
+          price: value.price
+        }
+      })
+    }
+  }
+
   async userConsumption(cellEthAddress: string): Promise<UserConsumption | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
