@@ -14,8 +14,8 @@ export class Cell extends BaseEntity {
   @Column()
   name!: string
 
-  @Column({type: 'real'})
-  balance!: number
+  @Column({type: 'real', nullable: true})
+  balance?: number
 
   @Column({array: true, type: 'real', nullable: true})
   initPower?: number[]

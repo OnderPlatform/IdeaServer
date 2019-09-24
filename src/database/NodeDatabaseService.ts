@@ -30,7 +30,7 @@ import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
 
-const DEFAULT_BALANCE = 999
+const DEFAULT_BALANCE = -1
 const DEFAULT_MARGIN = 5
 const DEFAULT_OPCOEF = 4
 const DEFAULT_INITPRICE = [0., 50., 100]
@@ -53,7 +53,6 @@ export class NodeDatabaseService {
     if (!(await this.cellRepository.find({})).length) {
       await Promise.all(initialMockData.consumers.map(value => {
         return this.cellRepository.insert({
-          balance: value.balance,
           ethAddress: value.ethAddress,
           name: value.name,
           type: 'consumer'
@@ -63,7 +62,6 @@ export class NodeDatabaseService {
         name: initialMockData.operator.name,
         ethAddress: initialMockData.operator.ethAddress,
         opCoef: initialMockData.operator.opCoef,
-        balance: initialMockData.operator.balance,
         type: 'operator'
       })
 
@@ -73,7 +71,6 @@ export class NodeDatabaseService {
           name: value.name,
           initPower: value.initPower,
           initPrice: value.initPrice,
-          balance: value.balance,
           type: 'producer'
         })
       }))
@@ -82,7 +79,6 @@ export class NodeDatabaseService {
           ethAddress: value.ethAddress,
           name: value.name,
           margin: value.margin,
-          balance: value.balance,
           type: 'prosumer'
         })
       })
@@ -1226,7 +1222,7 @@ export class NodeDatabaseService {
         return {
           total: value.cell.name,
           id: value.cell.ethAddress,
-          balance: value.cell.balance,
+          balance: value.cell.balance || DEFAULT_BALANCE,
           bought: value.energy,
           price: value.price
         }
@@ -1249,7 +1245,7 @@ export class NodeDatabaseService {
         return {
           total: value.cell.name,
           id: value.cell.ethAddress,
-          balance: value.cell.balance,
+          balance: value.cell.balance || DEFAULT_BALANCE,
           sold: value.energy,
           price: value.price
         }
@@ -1401,7 +1397,7 @@ export class NodeDatabaseService {
         return {
           total: value.cell.name,
           id: value.cell.ethAddress,
-          balance: value.cell.balance,
+          balance: value.cell.balance || DEFAULT_BALANCE,
           bought: value.energyIn,
           price: value.price
         }
@@ -1524,7 +1520,7 @@ export class NodeDatabaseService {
         return {
           total: value.cell.name,
           id: value.cell.ethAddress,
-          balance: value.cell.balance,
+          balance: value.cell.balance || DEFAULT_BALANCE,
           sold: value.energyOut,
           price: value.price
         }
@@ -1650,7 +1646,7 @@ export class NodeDatabaseService {
         return {
           total: value.cell.name,
           id: value.cell.ethAddress,
-          balance: value.cell.balance,
+          balance: value.cell.balance || DEFAULT_BALANCE,
           bought: value.energy,
           price: value.price
         }
@@ -1773,7 +1769,7 @@ export class NodeDatabaseService {
         return {
           total: value.cell.name,
           id: value.cell.ethAddress,
-          balance: value.cell.balance,
+          balance: value.cell.balance || DEFAULT_BALANCE,
           sold: value.energy,
           price: value.price
         }

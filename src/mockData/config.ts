@@ -54,28 +54,24 @@ export const initialMockData = {
       name: 'Diesel Genset #1',
       initPower: [0., 20., 30.],
       initPrice: [0., 50., 100.],
-      balance: 11
     },
     {
       ethAddress: EthAddresses[1],
       name: 'Diesel Genset #2',
       initPower: [0., 50., 10.],
       initPrice: [0., 100., 150.],
-      balance: 11213
     },
     {
       ethAddress: EthAddresses[2],
       name: 'PV System #1',
       initPower: [0., 100., 200.],
       initPrice: [0., 200., 400.],
-      balance: 2123
     },
     {
       ethAddress: EthAddresses[3],
       name: 'PV System #2',
       initPower: [0., 100., 200.],
       initPrice: [0., 200., 400.],
-      balance: 2123
     }
   ],
   prosumers: [
@@ -85,7 +81,6 @@ export const initialMockData = {
       margin: 5,
       energyInAll: 0,
       avPrice: 300,
-      balance: 10
     },
     {
       ethAddress: EthAddresses[5],
@@ -93,7 +88,6 @@ export const initialMockData = {
       margin: 5,
       energyInAll: 0,
       avPrice: 400,
-      balance: 20
     },
     {
       ethAddress: EthAddresses[6],
@@ -101,7 +95,6 @@ export const initialMockData = {
       margin: 5,
       energyInAll: 0,
       avPrice: 300,
-      balance: 10
     },
     {
       ethAddress: EthAddresses[7],
@@ -109,26 +102,22 @@ export const initialMockData = {
       margin: 5,
       energyInAll: 0,
       avPrice: 400,
-      balance: 20
     }
   ],
   consumers: [
     {
       ethAddress: EthAddresses[8],
       name: 'Load Bank #1',
-      balance: 900
     },
     {
       ethAddress: EthAddresses[9],
       name: 'Load Bank #2',
-      balance: 200
     },
   ],
   operator: {
     ethAddress: EthAddresses[10],
     name: 'Operator',
     opCoef: 3,
-    balance: 1000
   },
   users: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(value => {
     return {
