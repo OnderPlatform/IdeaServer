@@ -146,17 +146,6 @@ export interface HashingInfo {
   prosumer: ProsumerHashingInfo
 }
 
-export interface AdminTransactions {
-  transaction: Array<{
-    time: string
-    from: string
-    to: string
-    price: number
-    transfer_energy: number
-    transfer_coin: number
-  }>
-}
-
 export interface AdminConsumptions {
   "minEnergy": number,
   "maxEnergy": number,

@@ -10,7 +10,6 @@ import {
   AdminAnchor,
   AdminConsumptions,
   AdminProductions,
-  AdminTransactions,
   AMIGOCell,
   Authorization,
   CellRealData,
@@ -336,7 +335,6 @@ export class NodeDatabaseService {
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {
     // console.log('Got data: ', data);
-
     // 1. Inserting new entries
     await Promise.all(data.producers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
@@ -396,7 +394,7 @@ export class NodeDatabaseService {
       })
     }))
     // 2. Pip, avPrice
-    await Promise.all(data.prosumers.map(async value => {
+    await Promise.all(data.prosumers.map(async (value, index) => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
           ethAddress: value.prosumerEthAddress
@@ -430,7 +428,7 @@ export class NodeDatabaseService {
         id: lastProsumerCell.id
       }, {
         pip: pip,
-        avPrice: avPrice
+        avPrice: index + 1,  // todo: remove this hardcode
       })
     }))
 
@@ -454,14 +452,17 @@ export class NodeDatabaseService {
       if (!cell.initPower)
         throw new Error('initPower is null')
 
-      let index
-      if (value.power > cell.initPower[-1])
-        index = -1
-      else
-        index = cell.initPower.reduce((previousValue, currentValue) => {
-          return previousValue + (value.power < currentValue ? 1 : 0)
-        }, 0)
-      const price = cell.initPrice[index]
+
+      // let index
+      // if (value.power > cell.initPower[-1])
+      //   index = -1
+      // else
+      //   index = cell.initPower.reduce((previousValue, currentValue) => {
+      //     return previousValue + (value.power < currentValue ? 1 : 0)
+      //   }, 0)
+      // const price = cell.initPrice[index]
+      const price = cell.initPrice[cell.initPower.reduce((previousValue, currentValue) => previousValue + (currentValue < value.power ? 1 : 0), 0)]
+
 
       await this.tradeRepository.update({
         id: lastProducerEntry.id
@@ -542,7 +543,6 @@ export class NodeDatabaseService {
 
         return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyIn - currentValue.energyOut)
       }, 0)
-
       priceForConsumerAndProsumer = (S1 + S2) / (S3 + S4)
       // console.log("priceForConsumerAndProsumer: ", priceForConsumerAndProsumer);
 
@@ -573,7 +573,7 @@ export class NodeDatabaseService {
             throw new Error('energyIn is null')
           return previousValue + currentValue.energyIn
         }, 0)
-        pay = priceForConsumerAndProsumer * ((lastProsumerTrade.energyIn - lastProsumerTrade.energyOut) + lastProsumerTrade.energyIn * (S3 + S5 - S6 - S7) / (S6 + S7))
+        pay = priceForConsumerAndProsumer * (Math.abs(lastProsumerTrade.energyIn - lastProsumerTrade.energyOut) + lastProsumerTrade.energyIn * (S3 + S5 - S6 - S7) / (S6 + S7))
       }
 
       await this.tradeRepository.update({
@@ -1136,7 +1136,7 @@ export class NodeDatabaseService {
     }
   }
 
-  async adminTransactions(): Promise<AdminTransactions> {
+  async adminTransactions(): Promise<UserTransactions> {
     const transactions = await this.transactionRepository.find({
       relations: ['from', 'to']
     })
@@ -1894,77 +1894,102 @@ export class NodeDatabaseService {
 }"
   */
 
-  async newTransactionStateFromMQTT(value: string, message: string) {
+  async newTransactionStateFromMQTT(topic: string, message: string) {
     console.log("Receive new message from handler - %o ", message)
-    if (value.endsWith("finance")) {
+    if (topic.endsWith("finance")) {
       console.log("finance - mqtt")
-      if (value.includes('enode1')) {
-        //TODO added all nodes
-        //TODO add in database in specific node info
-        let obj = JSON.parse(message);
-
-        const newTransactions = await this.cellRepository.find({
-          where: {
-            name: "enode1"
-          }
-        })
-        for (const value of newTransactions) {
+      const splitTopic: string[] = topic.split('/')
+      const index: number = splitTopic.findIndex(value => value.includes('enode'))
+      const nodeNumerArray: string[] | null = splitTopic[index].match(/\d+/)
+      if (nodeNumerArray !== null && nodeNumerArray.length) {
+        const nodeNumer = nodeNumerArray[0]
+        try {
           await this.cellRepository.update({
-            id: value.id
+            name: `Agent${nodeNumer}`
           }, {
-            balance: obj.value
+            balance: JSON.parse(message).value
           })
+        } catch (e) {
+          console.log(e);
         }
-
+      } else {
+        throw new Error(`topic format is incorrect: ${topic}`)
       }
     }
 
-    if (value.endsWith("progress")) {
+    if (topic.endsWith("progress")) {
       console.log("progress - mqtt")
-      const newTransactions = await this.transactionRepository.find({
-        where: {
-          sentToMqtt: true
-        },
-        relations: ['from', 'to']
-      })
-      if (value.includes('enode1')) {
-        let obj = JSON.parse(message);
-        for (const value of newTransactions) {
-          // вытащить данны из переменной value и отправить в publishProgress
-          if (obj.seller == value.from && obj.contragent == value.to) {
-            await this.transactionRepository.update({
-              id: value.id
-            }, {
-              approved: obj.payment_state
-            })
-          }
+      const splitTopic = topic.split('/')
+      const index = splitTopic.findIndex(value => value.includes('enode'))
+      const nodeNumerArray = splitTopic[index].match(/\d+/)
+      if (nodeNumerArray !== null && nodeNumerArray.length) {
+        try {
+          const parsedMessage = JSON.parse(message)
+          const seller = await this.cellRepository.findOneOrFail({
+            where: {
+              name: parsedMessage.seller
+            }
+          })
+          const contragent = await this.cellRepository.findOneOrFail({
+            where: {
+              name: parsedMessage.contragent
+            }
+          })
+          await this.transactionRepository.update({
+            from: seller,
+            to: contragent,
+            sentToMqtt: true,
+            cost: parsedMessage.cost,
+            amount: parsedMessage.amount,
+          }, {
+            approved: parsedMessage.payment_state
+          })
+        } catch (e) {
+          console.log(e);
         }
+      } else {
+        throw new Error(`topic format is incorrect: ${topic}`)
       }
+
+      // if (topic.includes('enode1')) {
+      //   let obj = JSON.parse(message);
+      //   for (const value of newTransactions) {
+      //     // вытащить данны из переменной value и отправить в publishProgress
+      //     if (obj.seller == value.from && obj.contragent == value.to) {
+      //       await this.transactionRepository.update({
+      //         id: value.id
+      //       }, {
+      //         approved: obj.payment_state
+      //       })
+      //     }
+      //   }
+      // }
     }
   }
 
   async sendNewTransactionsToMQTT() {
-    const newTransactions = await this.transactionRepository.find({
+    const newTransaction = await this.transactionRepository.findOne({
       where: {
         sentToMqtt: false
       },
       relations: ['from', 'to']
     })
-    // for (const value of newTransactions) {
-      // вытащить данны из переменной value и отправить в publishProgress
-      this.db.mqtt.publishProgress(6, 1, 10, "Agent6", "Agent7", 1, 1)
-      this.db.mqtt.publishProgress(7, 1, 10, "Agent6", "Agent7", 1, 1)
-      //this.db.mqtt.publishProgress(1, 1, 200, "Agent2", "Agent1", 1, 2)
-    // }
 
+    if (!newTransaction)
+      return
+    // вытащить данны из переменной value и отправить в publishProgress
+    if (newTransaction.from.name.match(/\d+/) === null || newTransaction.to.name.match(/\d+/) === null)
+      throw new Error('no digits in name of node')
+    // @ts-ignore
+    this.db.mqtt.publishProgress(+newTransaction.from.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.from.name, newTransaction.price, newTransaction.cost)
+    // @ts-ignore
+    this.db.mqtt.publishProgress(+newTransaction.to.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.from.name, newTransaction.price, newTransaction.cost)
 
-    for (const value of newTransactions) {
-      await this.transactionRepository.update({
-        id: value.id
-      }, {
-        sentToMqtt: true
-      })
-    }
+    await this.transactionRepository.update({
+      id: newTransaction.id
+    }, {
+      sentToMqtt: true
+    })
   }
 
 
