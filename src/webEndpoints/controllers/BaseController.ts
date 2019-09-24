@@ -5,7 +5,7 @@ import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/NodeDatabase";
 import * as jwt from "jsonwebtoken";
 import { getRepository } from "typeorm";
-import { User } from "../../database/models/User";
+import { User } from "../../database/models";
 import config from "../../config/config";
 
 export class BaseController {
@@ -43,6 +43,7 @@ export class BaseController {
     // example: remove after implementation
     router.post(`${namespace}/login`, koaBody(), this.login.bind(this))
     router.post(`${namespace}/margin`, koaBody(), this.postUserMargin.bind(this))
+    router.post(`${namespace}/close`, koaBody(), this.postCloseChannels.bind(this))
     router.get(`${namespace}/consumption`, this.getUserConsumptions.bind(this))
     router.get(`${namespace}/production`, this.getUserProductions.bind(this))
     router.get(`${namespace}/transaction`, this.getUserTransactions.bind(this))
@@ -140,6 +141,20 @@ export class BaseController {
   //   }
   // }
 
+  async postCloseChannels(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+    } catch (e) {
+      console.log(e);
+      ctx.response.status = 500;
+    }
+  }
+
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     ctx.response.status = 501
@@ -161,6 +176,7 @@ export class BaseController {
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -407,6 +423,7 @@ export class BaseController {
   }
 
   async login(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     try {
       // const body = JSON.parse( as string)
       console.log(ctx.request.body.email);

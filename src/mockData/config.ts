@@ -52,26 +52,26 @@ export const initialMockData = {
     {
       ethAddress: EthAddresses[0],
       name: 'Diesel Genset #1',
-      initPower: [0., 20., 30.],
-      initPrice: [0., 50., 100.],
+      initPower: [0,	3,	5,	7,	9],
+      initPrice: [0,	2,	3,	4,	5],
     },
     {
       ethAddress: EthAddresses[1],
       name: 'Diesel Genset #2',
-      initPower: [0., 50., 10.],
-      initPrice: [0., 100., 150.],
+      initPower: [0,	3,	5,	7,	9],
+      initPrice: [0,	2,	3,	4,	5],
     },
     {
       ethAddress: EthAddresses[2],
       name: 'PV System #1',
-      initPower: [0., 100., 200.],
-      initPrice: [0., 200., 400.],
+      initPower: [0,	3,	5,	7,	9],
+      initPrice: [0,	2,	3,	4,	5],
     },
     {
       ethAddress: EthAddresses[3],
       name: 'PV System #2',
-      initPower: [0., 100., 200.],
-      initPrice: [0., 200., 400.],
+      initPower: [0,	3,	5,	7,	9],
+      initPrice: [0,	2,	3,	4,	5],
     }
   ],
   prosumers: [

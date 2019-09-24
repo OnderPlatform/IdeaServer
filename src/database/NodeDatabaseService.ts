@@ -1,6 +1,6 @@
 import NodeDatabase from './NodeDatabase'
 import { CellRepository } from "./repositories/CellRepository";
-import { getCustomRepository, Raw } from "typeorm";
+import { getCustomRepository, IsNull, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
@@ -1935,8 +1935,7 @@ export class NodeDatabaseService {
             from: seller,
             to: contragent,
             sentToMqtt: true,
-            cost: parsedMessage.cost,
-            amount: parsedMessage.amount,
+            approved: IsNull()
           }, {
             approved: parsedMessage.payment_state
           })
@@ -1977,9 +1976,9 @@ export class NodeDatabaseService {
     if (newTransaction.from.name.match(/\d+/) === null || newTransaction.to.name.match(/\d+/) === null)
       throw new Error('no digits in name of node')
     // @ts-ignore
-    this.db.mqtt.publishProgress(+newTransaction.from.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.from.name, newTransaction.price, newTransaction.cost)
+    this.db.mqtt.publishProgress(+newTransaction.from.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.to.name, newTransaction.price, newTransaction.cost)
     // @ts-ignore
-    this.db.mqtt.publishProgress(+newTransaction.to.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.from.name, newTransaction.price, newTransaction.cost)
+    this.db.mqtt.publishProgress(+newTransaction.to.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.to.name, newTransaction.price, newTransaction.cost)
 
     await this.transactionRepository.update({
       id: newTransaction.id
@@ -2000,9 +1999,11 @@ export class NodeDatabaseService {
     for (const user of users) {
       const type = user.cell.type
       let anchoringData = {}
+      let time: number
 
       switch (type) {
         case 'producer': {
+          time = preAnchoring.producer.date
           anchoringData = {
             "date": "" + preAnchoring.producer.date,
             "entries": preAnchoring.producer.producer.filter(value => value.email === user.email).map(value => {
@@ -2015,6 +2016,7 @@ export class NodeDatabaseService {
           break;
         }
         case 'consumer': {
+          time = preAnchoring.consumer.date
           anchoringData = {
             "date": "" + preAnchoring.consumer.date,
             "entries": preAnchoring.consumer.consumer.filter(value => value.email === user.email).map(value => {
@@ -2026,6 +2028,7 @@ export class NodeDatabaseService {
           break;
         }
         case 'prosumer': {
+          time = preAnchoring.prosumer.date
           anchoringData = {
             "date": "" + preAnchoring.prosumer.date,
             "entries": preAnchoring.prosumer.prosumer.filter(value => value.email === user.email).map(value => {
@@ -2048,7 +2051,22 @@ export class NodeDatabaseService {
         }
       })
       console.log('Response from anchor service: ', response.data)
-      // todo: what to do with this response?
+      try {
+        await this.anchorRepository.insert({
+          address: response.data.txHash,
+          hashId: response.data.dataHash,
+          time: time,
+          user: user
+        })
+      } catch (e) {
+        console.log(e);
+      }
+
+      //
+      //time add to anchor (time)
+      // add txhash(address), dataHash(hashId) to database anchor
+
+
     }
   }
 

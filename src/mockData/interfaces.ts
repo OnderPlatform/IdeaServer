@@ -190,7 +190,7 @@ export interface AdminProductions {
 
 export interface AdminAnchor {
   "anchors": Array<{
-    "date": string,
+    "date": number,
     "participant": string,
     "id": string,
     "address": string
@@ -283,7 +283,7 @@ export interface UserTransactions {
 
 export interface UserAnchor {
   "anchors": Array<{
-    "data": string,
+    "data": number,
     "participant": string,
     "hashId": string,
     "address": string
