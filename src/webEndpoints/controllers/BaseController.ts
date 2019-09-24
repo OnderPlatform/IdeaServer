@@ -1,12 +1,13 @@
 import * as Router from 'koa-router'
 import * as fs from 'fs';
-
 import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/NodeDatabase";
 import * as jwt from "jsonwebtoken";
 import { getRepository } from "typeorm";
 import { User } from "../../database/models";
 import config from "../../config/config";
+import { mapEthAddressToURL } from "../endpoints/IDEAServers";
+import axios from 'axios'
 
 export class BaseController {
   public readonly db: NodeDatabase
@@ -26,7 +27,6 @@ export class BaseController {
     const router = new Router()
     const namespace = `/api`
     let mqtt_cl = require('../../mqtt/Mqtt_client')
-
 
 
     var workerpool = require('workerpool');
@@ -58,7 +58,7 @@ export class BaseController {
       this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       this.excel.parse()
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5,7)
+      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5, 7)
     })
 
     router.get('/download', async function (ctx) {
@@ -149,10 +149,19 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const status = ctx.request.body.status
+      if (!status) {
+        const neighbourIds: {neighbours: Array<{neighbourId: number}>} = await axios.get(`${mapEthAddressToURL(who)}/neighbours`)
+        const closingChannelsResult = await Promise.all(neighbourIds.neighbours.map(async value => {
+          return await axios.post(`${mapEthAddressToURL(who)}/closechannel/${value.neighbourId}`)
+        }))
+        ctx.response.body = closingChannelsResult
+      }
     } catch (e) {
       console.log(e);
-      ctx.response.status = 500;
+      ctx.response.status = 500
     }
+    ctx.response.status = 200
   }
 
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
@@ -518,6 +527,37 @@ export class BaseController {
     //If all ok, send 201 response
     ctx.response.status = 201
   };
+
+
+
+  async getCheckUserNotarization(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+      if (isAdmin) {
+        const users = await this.db.service.userRepository.find({})
+        const checkingResult = Promise.all(users.map(async value => {
+          const infoToCheck = this.db.service.getAnchoringInfoToCheck(value)
+          // todo: handle infoToCheck
+        }))
+      } else {
+        const infoToCheck = this.db.service.getAnchoringInfoToCheck(user)
+        // todo: handle infoToCheck
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
   async listAll(ctx: Router.IRouterContext) {
 
