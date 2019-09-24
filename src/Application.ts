@@ -29,8 +29,8 @@ export default class Application {
   }
 
   fetchingData = async () => {
-    const data = await fetchMocks('endpoint')
-    await this.db.service.handleDataFromAMIGO(data)
+    // const data = await fetchMocks('endpoint')
+    // await this.db.service.handleDataFromAMIGO(data)
     await this.db.service.sendNewTransactionsToMQTT() // todo: CALL THIS FUNCTION AFTER PREVIOUS
   }
 
