@@ -5,7 +5,7 @@ import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/NodeDatabase";
 import * as jwt from "jsonwebtoken";
 import { getRepository } from "typeorm";
-import { User } from "../../database/models/User";
+import { User } from "../../database/models";
 import config from "../../config/config";
 
 type UserInfo = {
@@ -16,6 +16,7 @@ type UserInfo = {
 
 export class BaseController {
   public readonly db: NodeDatabase
+  private excel = require('../../excel/xlsx')
 
 
   constructor(db: NodeDatabase) {
@@ -31,7 +32,7 @@ export class BaseController {
     const router = new Router()
     const namespace = `/api`
     let mqtt_cl = require('../../mqtt/Mqtt_client')
-    let excel = require('../../excel/xlsx')
+
 
 
     var workerpool = require('workerpool');
@@ -48,6 +49,7 @@ export class BaseController {
     // example: remove after implementation
     router.post(`${namespace}/login`, koaBody(), this.login.bind(this))
     router.post(`${namespace}/margin`, koaBody(), this.postUserMargin.bind(this))
+    router.post(`${namespace}/close`, koaBody(), this.postCloseChannels.bind(this))
     router.get(`${namespace}/consumption`, this.getUserConsumptions.bind(this))
     router.get(`${namespace}/production`, this.getUserProductions.bind(this))
     router.get(`${namespace}/transaction`, this.getUserTransactions.bind(this))
@@ -60,7 +62,7 @@ export class BaseController {
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
-      excel.parse()
+      this.excel.parse()
       this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5,7)
     })
 
@@ -136,6 +138,20 @@ export class BaseController {
   //   }
   // }
 
+  async postCloseChannels(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+    } catch (e) {
+      console.log(e);
+      ctx.response.status = 500;
+    }
+  }
+
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
     ctx.response.status = 501
   }
@@ -154,6 +170,7 @@ export class BaseController {
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -352,7 +369,24 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      ctx.response.status = 501
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+      if (isAdmin) {
+        const params = new URLSearchParams(ctx.request.querystring)
+        const discoveringuser = params.get('ethId')
+        if (discoveringuser) {
+          this.excel.parseTransactionsToExcel(await this.db.service.userTransactions(discoveringuser))
+        } else {
+          this.excel.parseTransactionsToExcel(await this.db.service.adminTransactions())
+        }
+      } else {
+        this.excel.parseTransactionsToExcel(await this.db.service.userTransactions(who))
+      }
+      ctx.response.status = 200
     } catch (e) {
       console.log(e);
     }
@@ -376,6 +410,7 @@ export class BaseController {
   }
 
   async login(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     try {
       // const body = JSON.parse( as string)
       console.log(ctx.request.body.email);

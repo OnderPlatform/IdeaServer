@@ -9,8 +9,8 @@ export class Anchor extends BaseEntity {
   @ManyToOne(type => User, user => user.id)
   user!: User
 
-  @Column({type: 'timestamptz'})
-  time!: string
+  @Column({type: 'bigint'})
+  time!: number
 
   @Column()
   hashId!: string

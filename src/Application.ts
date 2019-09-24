@@ -29,9 +29,9 @@ export default class Application {
   }
 
   fetchingData = async () => {
-    const data = await fetchMocks('endpoint')
-    await this.db.service.handleDataFromAMIGO(data)
-    await this.db.service.sendNewTransactionsToMQTT() // todo: CALL THIS FUNCTION AFTER PREVIOUS
+    // const data = await fetchMocks('endpoint')
+    // await this.db.service.handleDataFromAMIGO(data)
+    await this.db.service.sendNewTransactionsToMQTT()
   }
 
   postData = async () => {
@@ -51,23 +51,26 @@ export default class Application {
     this.mqtt.add_handler((value: string, message: string) => this.db.service.newTransactionStateFromMQTT(value, message))
     this.mqtt.start()
     console.log("post data cron")
-    this.fetchingData()
+    // this.postData()
     //this.fetchingData()
-    //this.fetchingData()
-    //this.postData()
-    //this.fetchingData()
-    // await this.db.service.fetchDataFromAMIGO() //todo: CALL THIS FUNCTION EVERY 15 MINUTES
-    // await this.db.service.sendNewTransactionsToMQTT() //todo: CALL THIS FUNCTION AFTER PREVIOUS
+    // await this.db.service.fetchDataFromAMIGO()
+    // await this.db.service.sendNewTransactionsToMQTT()
 
+    // const data = await fetchMocks('endpoint')
+    // await this.db.service.handleDataFromAMIGO(data)
 
-//TODO call specific function
-    cron.schedule('0 */15 * * * *', () => {
+    cron.schedule('*/5 * * * * *', () => {
       console.log("fetch data cron")
       this.fetchingData()
     });
-    cron.schedule("0 0 0 * * *'", () => {
-      console.log("post data cron")
-      this.postData()
-    })
+//TODO call specific function
+//     cron.schedule('0 */1 * * * *', () => {
+//       console.log("fetch data cron")
+//       this.fetchingData()
+//     });
+//     cron.schedule("0 0 0 * * *'", () => {
+//       console.log("post data cron")
+//       this.postData()
+//     })
   }
 }
