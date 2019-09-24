@@ -18,5 +18,8 @@ export const IDEAURLs = IDEAServers.map(value => {
 })
 
 export const mapEthAddressToURL = (ethAddress: string) => {
-  return IDEAURLs.find(value => value.url.includes(ethAddress))
+  const url = IDEAURLs.find(value => value.url.includes(ethAddress))
+  if (!url)
+    throw new Error('mapping error')
+  return url.url
 }

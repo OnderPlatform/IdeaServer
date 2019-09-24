@@ -141,6 +141,38 @@ export class BaseController {
   //   }
   // }
 
+  async closeUserChannels(userEmail: string): Promise<any> {
+    const who: string = await this.findEthAddressByEmail(userEmail)
+    const getNeighboursIdResponse = await axios.get(`${mapEthAddressToURL(who)}/neighbours`)
+    const neighbourIds: { neighbours: Array<{ neighbourId: number }> } = getNeighboursIdResponse.data
+    return Promise.all(neighbourIds.neighbours.map(async value => {
+      try {
+        const response = await axios.post(`${mapEthAddressToURL(who)}/closechannel/${value.neighbourId}`)
+        return response.data
+      } catch (e) {
+        console.log(e);
+        return e.message
+      }
+    }))
+  }
+
+  async closeAllUsersChannels(): Promise<any> {
+    const users = await this.db.service.userRepository.find({})
+    return Promise.all(users.map(async value => {
+      try {
+        const result = await this.closeUserChannels(value.email)
+        return {
+          [value.email]: result
+        }
+      } catch (e) {
+        console.log(e);
+        return {
+          [value.email]: e.message
+        }
+      }
+    }))
+  }
+
   async postCloseChannels(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     check(ctx)
@@ -148,14 +180,19 @@ export class BaseController {
       return
     }
     try {
-      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const status = ctx.request.body.status
+      const who: string = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const status: boolean = ctx.request.body.status
       if (!status) {
-        const neighbourIds: {neighbours: Array<{neighbourId: number}>} = await axios.get(`${mapEthAddressToURL(who)}/neighbours`)
-        const closingChannelsResult = await Promise.all(neighbourIds.neighbours.map(async value => {
-          return await axios.post(`${mapEthAddressToURL(who)}/closechannel/${value.neighbourId}`)
-        }))
-        ctx.response.body = closingChannelsResult
+        if (user.isAdmin) {
+          ctx.response.body = await this.closeAllUsersChannels()
+        } else {
+          ctx.response.body = await this.closeUserChannels(<string>ctx.request.headers['from'])
+        }
       }
     } catch (e) {
       console.log(e);
