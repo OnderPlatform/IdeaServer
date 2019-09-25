@@ -1,12 +1,13 @@
 import * as Router from 'koa-router'
 import * as fs from 'fs';
-
 import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/NodeDatabase";
 import * as jwt from "jsonwebtoken";
 import { getRepository } from "typeorm";
 import { User } from "../../database/models";
 import config from "../../config/config";
+import { mapEthAddressToURL } from "../endpoints/IDEAServers";
+import axios from 'axios'
 
 type UserInfo = {
   userId: number,
@@ -32,7 +33,6 @@ export class BaseController {
     const router = new Router()
     const namespace = `/api`
     let mqtt_cl = require('../../mqtt/Mqtt_client')
-
 
 
     var workerpool = require('workerpool');
@@ -63,7 +63,7 @@ export class BaseController {
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
       this.excel.parse()
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5,7)
+      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5, 7)
     })
 
     router.get('/download', async function (ctx) {
@@ -138,6 +138,38 @@ export class BaseController {
   //   }
   // }
 
+  async closeUserChannels(userEmail: string): Promise<any> {
+    const who: string = await this.findEthAddressByEmail(userEmail)
+    const getNeighboursIdResponse = await axios.get(`${mapEthAddressToURL(who)}/neighbours`)
+    const neighbourIds: { neighbours: Array<{ neighbourId: number }> } = getNeighboursIdResponse.data
+    return Promise.all(neighbourIds.neighbours.map(async value => {
+      try {
+        const response = await axios.post(`${mapEthAddressToURL(who)}/closechannel/${value.neighbourId}`)
+        return response.data
+      } catch (e) {
+        console.log(e);
+        return e.message
+      }
+    }))
+  }
+
+  async closeAllUsersChannels(): Promise<any> {
+    const users = await this.db.service.userRepository.find({})
+    return Promise.all(users.map(async value => {
+      try {
+        const result = await this.closeUserChannels(value.email)
+        return {
+          [value.email]: result
+        }
+      } catch (e) {
+        console.log(e);
+        return {
+          [value.email]: e.message
+        }
+      }
+    }))
+  }
+
   async postCloseChannels(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     check(ctx)
@@ -145,11 +177,25 @@ export class BaseController {
       return
     }
     try {
-      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const who: string = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const status: boolean = ctx.request.body.status
+      if (!status) {
+        if (user.isAdmin) {
+          ctx.response.body = await this.closeAllUsersChannels()
+        } else {
+          ctx.response.body = await this.closeUserChannels(<string>ctx.request.headers['from'])
+        }
+      }
     } catch (e) {
       console.log(e);
-      ctx.response.status = 500;
+      ctx.response.status = 500
     }
+    ctx.response.status = 200
   }
 
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
@@ -506,6 +552,37 @@ export class BaseController {
     //If all ok, send 201 response
     ctx.response.status = 201
   };
+
+
+
+  async getCheckUserNotarization(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      const isAdmin = user.isAdmin
+      if (isAdmin) {
+        const users = await this.db.service.userRepository.find({})
+        const checkingResult = Promise.all(users.map(async value => {
+          const infoToCheck = this.db.service.getAnchoringInfoToCheck(value)
+          // todo: handle infoToCheck
+        }))
+      } else {
+        const infoToCheck = this.db.service.getAnchoringInfoToCheck(user)
+        // todo: handle infoToCheck
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
   async listAll(ctx: Router.IRouterContext) {
 

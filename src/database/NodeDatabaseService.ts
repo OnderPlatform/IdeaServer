@@ -29,6 +29,7 @@ import {
 import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
+import { User } from "./models";
 
 const DEFAULT_BALANCE = -1
 const DEFAULT_MARGIN = 5
@@ -1053,6 +1054,76 @@ export class NodeDatabaseService {
         }
       }
     }))
+  }
+
+  async getAnchoringInfoToCheck(user: User) {
+    const hashingInfo = await this.db.service.userTradeInfoForHashing(user.email)
+    const anchoringEntry = await this.db.service.anchorRepository.findOne({
+      where: {
+        user: user
+      },
+      order: {
+        time: "DESC"
+      }
+    })
+    if (!anchoringEntry) {
+      throw new Error('there is no any anchoring info yet')
+    }
+    return {
+      ...hashingInfo,
+      time: anchoringEntry.time
+    }
+  }
+
+  async userTradeInfoForHashing(userEmail: string) {
+    const user = await this.userRepository.findOneOrFail({
+      where: {
+        email: userEmail
+      },
+      relations: ['cell']
+    })
+
+    const tradeTable = await this.tradeRepository.find({
+      where: {
+        time: Raw(columnAlias => `(${columnAlias})::date = current_date - interval '1 day'`),
+        cell: user.cell
+      },
+      relations: ['cell']
+    })
+    switch (user.cell.type) {
+      case 'prosumer': {
+        return {
+          data: tradeTable.map(value => {
+            return {
+              energyIn: value.energyIn,
+              energyOut: value.energyOut,
+            }
+          })
+        }
+      }
+      case "consumer": {
+        return {
+          data: tradeTable.map(value => {
+            return {
+              energy: value.energy
+            }
+          })
+        }
+      }
+      case "producer": {
+       return {
+         data: tradeTable.map(value => {
+           return {
+             energy: value.energy,
+             power: value.power
+           }
+         })
+       }
+      }
+      default: {
+        throw new Error('unexpected cell type while requesting hashing info')
+      }
+    }
   }
 
   async tradeInfoForHashing(): Promise<HashingInfo> {
