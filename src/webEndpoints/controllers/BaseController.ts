@@ -53,6 +53,7 @@ export class BaseController {
     router.get(`${namespace}/price`, this.getUserPrice.bind(this))
     router.post(`${namespace}/newuser`, koaBody(), this.newUser.bind(this))
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
+    router.get(`${namespace}/check`, this.getLastLogin.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       this.setCorsHeaders(ctx)
@@ -636,6 +637,22 @@ export class BaseController {
     }
   }
 
+  async getLastLogin(ctx: Router.IRouterContext) {
+    let status
+    check(ctx)
+    status = ctx.status !== 401;
+    const lastCheckData = await this.db.service.userRepository.findOneOrFail({
+      where: {
+        email: <string>ctx.request.headers['from']
+      }
+    })
+    ctx.response.body = {
+      lastCheckDate: lastCheckData.lastCheckDate || 'unauthorized',
+      isVerified: status
+    }
+    ctx.response.status = 200
+  }
+
   async listAll(ctx: Router.IRouterContext) {
 
     // const { userId, username } = jwtPayload;
@@ -669,6 +686,11 @@ async function check(ctx: Router.IRouterContext) {
       where: {
         email: email
       }
+    })
+    await userRepository.update({
+      email: user.email
+    }, {
+      lastCheckDate: (new Date(Date.now())).toISOString()
     })
 
     if (user.isAdmin) {

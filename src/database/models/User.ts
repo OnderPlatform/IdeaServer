@@ -18,4 +18,7 @@ export class User extends BaseEntity {
 
   @Column({default: false})
   isAdmin!: boolean
+
+  @Column({type: "date", nullable: true})
+  lastCheckDate?: string
 }

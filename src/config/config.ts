@@ -3,7 +3,7 @@ export default {
   notarizationUrl: "localhost",
   notarizationPort: "9505",
   serverUrl: "localhost",
-  serverPort: 3500,
+  serverPort: 8888,
   hostDB: "localhost",
   portDB: 5432,
   usernameDB: "postgres",
