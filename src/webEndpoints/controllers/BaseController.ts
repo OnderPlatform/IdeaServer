@@ -59,6 +59,7 @@ export class BaseController {
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
     router.post(`${namespace}/newuser`, koaBody(), this.newUser.bind(this))
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
+    router.get(`${namespace}/getCurrentUser`, this.getCurrentUser.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
@@ -84,6 +85,16 @@ export class BaseController {
   }
 
 
+  async getCurrentUser(ctx: Router.IRouterContext) {
+    check(ctx);
+    const email = ctx.request.header['from'];
+
+    const user = await this.db.service.userRepository.findOneOrFail({
+      where: { email },
+    })
+    ctx.response.body = user;
+  }
+  
   async findEthAddressByEmail(email: string): Promise<string> {
     const cell = await this.db.service.userRepository.findOneOrFail({
       where: {
@@ -171,7 +182,6 @@ export class BaseController {
   }
 
   async postCloseChannels(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -216,7 +226,6 @@ export class BaseController {
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -456,7 +465,6 @@ export class BaseController {
   }
 
   async login(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     try {
       // const body = JSON.parse( as string)
       console.log(ctx.request.body.email);
@@ -556,7 +564,6 @@ export class BaseController {
 
 
   async getCheckUserNotarization(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
