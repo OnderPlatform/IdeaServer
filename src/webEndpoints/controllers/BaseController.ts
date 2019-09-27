@@ -40,7 +40,6 @@ export class BaseController {
     configure endpoints
     */
 
-    // example: remove after implementation
     router.post(`${namespace}/login`, koaBody(), this.login.bind(this))
     router.post(`${namespace}/margin`, koaBody(), this.postUserMargin.bind(this))
     router.post(`${namespace}/close`, koaBody(), this.postCloseChannels.bind(this))
@@ -51,6 +50,7 @@ export class BaseController {
     router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
     router.get(`${namespace}/anchor`, this.getUserAnchors.bind(this))
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
+    router.get(`${namespace}/price`, this.getUserPrice.bind(this))
     router.post(`${namespace}/newuser`, koaBody(), this.newUser.bind(this))
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
 
@@ -449,6 +449,46 @@ export class BaseController {
       console.log(e);
     }
 
+  }
+
+  async getUserPrice(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const cell = await this.db.service.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: who
+        }
+      })
+      if (cell.type === 'producer') {
+        if (cell.initPower && cell.initPrice) {
+          let prices = []
+          for (let i = 0; i < cell.initPower.length; i++) {
+            prices.push({
+              amount: cell.initPower[i],
+              price: cell.initPrice[i]
+            })
+          }
+          ctx.response.body = {
+            prices
+          }
+          ctx.response.status = 200
+        } else {
+          console.log('null!');
+          const errorMessage = 'initPower or initPrice is null'
+          ctx.throw(500, errorMessage)
+        }
+      } else {
+        ctx.response.body = 'this request allowed only for producer'
+        ctx.response.status = 400
+      }
+    } catch (e) {
+      ctx.throw(500, e.message)
+    }
   }
 
   async postUserPrice(ctx: Router.IRouterContext) {
