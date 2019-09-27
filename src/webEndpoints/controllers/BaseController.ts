@@ -638,19 +638,25 @@ export class BaseController {
   }
 
   async getLastLogin(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
     let status
     check(ctx)
     status = ctx.status !== 401;
-    const lastCheckData = await this.db.service.userRepository.findOneOrFail({
-      where: {
-        email: <string>ctx.request.headers['from']
+    try {
+      const lastCheckData = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: <string>ctx.request.headers['from']
+        }
+      })
+      ctx.response.body = {
+        lastCheckDate: lastCheckData.lastCheckDate || 'unauthorized',
+        isVerified: status
       }
-    })
-    ctx.response.body = {
-      lastCheckDate: lastCheckData.lastCheckDate || 'unauthorized',
-      isVerified: status
+      ctx.response.status = 200
+    } catch (e) {
+      ctx.throw(500, e.message)
     }
-    ctx.response.status = 200
+
   }
 
   async listAll(ctx: Router.IRouterContext) {
