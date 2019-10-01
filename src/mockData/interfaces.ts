@@ -1,6 +1,3 @@
-// Interfaces related to AMIGO
-
-
 export interface ProducerData {
   time: Date,
   energy: number,
