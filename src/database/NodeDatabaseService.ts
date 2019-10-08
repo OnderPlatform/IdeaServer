@@ -1071,7 +1071,7 @@ export class NodeDatabaseService {
     }
     return {
       ...hashingInfo,
-      time: anchoringEntry.time
+      time: '' + anchoringEntry.time
     }
   }
 
@@ -1095,8 +1095,8 @@ export class NodeDatabaseService {
         return {
           data: tradeTable.map(value => {
             return {
-              energyIn: value.energyIn,
-              energyOut: value.energyOut,
+              energyIn: ""+value.energyIn,
+              energyOut: ""+value.energyOut,
             }
           })
         }
@@ -1105,7 +1105,7 @@ export class NodeDatabaseService {
         return {
           data: tradeTable.map(value => {
             return {
-              energy: value.energy
+              energy: ""+value.energy
             }
           })
         }
@@ -1114,8 +1114,8 @@ export class NodeDatabaseService {
        return {
          data: tradeTable.map(value => {
            return {
-             energy: value.energy,
-             power: value.power
+             energy: ""+value.energy,
+             power: ""+value.power
            }
          })
        }
@@ -2115,7 +2115,9 @@ export class NodeDatabaseService {
           throw new Error('unexpected type of cell')
         }
       }
-      console.log(JSON.stringify(anchoringData))
+
+
+      console.log('Notarizing this one: ', JSON.stringify(anchoringData))
       const response = await axios.post('http://localhost:9505/timestamp/add/', JSON.stringify(anchoringData), {
         headers: {
           'Content-Type': 'application/json',
