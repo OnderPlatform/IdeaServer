@@ -293,3 +293,16 @@ export interface UserPrices {
     "price": number
   }>
 }
+
+export interface PricesForAMIGO {
+  ethAddress: string,
+  price: number,
+  time: string
+}
+
+export interface OnInitPriceInitPowerChanged {
+  ethAddress: string,
+  initPower: number[],
+  initPrice: number[],
+  whenChanged: string
+}
