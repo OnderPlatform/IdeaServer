@@ -9,6 +9,12 @@ import config from "../../config/config";
 import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
 
+type UserInfo = {
+  userId: number,
+  email: string,
+  isAdmin: boolean,
+}
+
 export class BaseController {
   public readonly db: NodeDatabase
   private excel = require('../../excel/xlsx')
@@ -56,9 +62,9 @@ export class BaseController {
     router.post(`${namespace}/newuser`, koaBody(), this.newUser.bind(this))
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
     router.get(`${namespace}/check`, this.getLastLogin.bind(this))
+    router.get(`${namespace}/getCurrentUser`, this.getCurrentUser.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
-      this.setCorsHeaders(ctx)
       ctx.response.body = 'Hello!'
       this.excel.parse()
       this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5, 7)
@@ -81,10 +87,15 @@ export class BaseController {
     return router
   }
 
-  setCorsHeaders(ctx: Router.IRouterContext) {
-    ctx.response.set('Access-Control-Allow-Origin', '*')
-    ctx.response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
-    ctx.response.set('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS')
+
+  async getCurrentUser(ctx: Router.IRouterContext) {
+    check(ctx);
+    const email = ctx.request.header['from'];
+
+    const user = await this.db.service.userRepository.findOneOrFail({
+      where: { email },
+    })
+    ctx.response.body = user;
   }
 
   async findEthAddressByEmail(email: string): Promise<string> {
@@ -98,7 +109,6 @@ export class BaseController {
   }
 
   async getAdminTransactions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -108,7 +118,6 @@ export class BaseController {
   }
 
   async getAdminConsumptions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -118,7 +127,6 @@ export class BaseController {
   }
 
   async getAdminProductions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -186,7 +194,6 @@ export class BaseController {
   }
 
   async postCloseChannels(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -224,17 +231,14 @@ export class BaseController {
   }
 
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     ctx.response.status = 501
   }
 
   getAdminExcelTransaction(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     ctx.response.status = 501
   }
 
   async getAdminAnchors(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -244,7 +248,6 @@ export class BaseController {
   }
 
   async getUserMargin(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -280,7 +283,6 @@ export class BaseController {
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -296,7 +298,6 @@ export class BaseController {
   }
 
   async getUserConsumptions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -345,7 +346,6 @@ export class BaseController {
   }
 
   async getUserProductions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -397,7 +397,6 @@ export class BaseController {
   }
 
   async getUserTransactions(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -430,7 +429,6 @@ export class BaseController {
   }
 
   async getUserAnchors(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -462,7 +460,6 @@ export class BaseController {
   }
 
   async getUserExcelEnergy(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -487,7 +484,6 @@ export class BaseController {
   }
 
   async getUserExcelTransaction(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -522,7 +518,6 @@ export class BaseController {
   }
 
   async getUserPrice(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -562,7 +557,6 @@ export class BaseController {
   }
 
   async postUserPrice(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -579,7 +573,6 @@ export class BaseController {
   }
 
   async login(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     try {
       // const body = JSON.parse( as string)
       console.log(ctx.request.body.email);
@@ -604,10 +597,11 @@ export class BaseController {
     }
     var token = ""
     if (user != undefined && user.password == password) {
+      let userInfo: UserInfo = { userId: user.id, email: user.email, isAdmin: false };
       if (user.isAdmin) {
         //Sing JWT, valid for 1 hour
         token = jwt.sign(
-          {userId: user.id, email: user.email},
+          { ...userInfo, isAdmin: true },
           config.adminSecret,
           {expiresIn: "10m"}
         );
@@ -615,7 +609,7 @@ export class BaseController {
         console.log("admin")
       } else {
         token = jwt.sign(
-          {userId: user.id, email: user.email},
+          userInfo,
           user.email,
           {expiresIn: "10m"}
         );
@@ -677,7 +671,6 @@ export class BaseController {
 
 
   async getCheckUserNotarization(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     check(ctx)
     if (ctx.response.status == 401) {
       return
@@ -706,7 +699,6 @@ export class BaseController {
   }
 
   async getLastLogin(ctx: Router.IRouterContext) {
-    this.setCorsHeaders(ctx)
     let status
     check(ctx)
     status = ctx.status !== 401;

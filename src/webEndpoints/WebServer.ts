@@ -4,6 +4,7 @@ import { BaseController } from './controllers/BaseController'
 import NodeDatabase from "../database/NodeDatabase";
 import bodyParser = require('koa-bodyparser');
 import koaLogger = require('koa-logger');
+const cors = require('@koa/cors');
 
 export default class WebServer {
   public readonly db: NodeDatabase
@@ -19,7 +20,6 @@ export default class WebServer {
     this.db = db
 
     this.configureRouters()
-
     this.app.use(koaLogger((str, args) => {
     }))
     this.app.use(bodyParser())
@@ -38,6 +38,7 @@ export default class WebServer {
   private configureRouters(): void {
     const controller = new BaseController(this.db)
     const router = controller.router()
+    this.app.use(cors())
     this.app.use(router.routes()).use(router.allowedMethods())
   }
 }
