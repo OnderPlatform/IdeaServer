@@ -134,29 +134,29 @@ const mockData2: DataFromAMIGO = {
   ]
 }
 
-// export default function (endpoint: string): Promise<DataFromAMIGO> {
-//   return new Promise(resolve => {
-//     let mocks = mockData
-//     mocks.producers.forEach(value => {
-//       value.time = new Date(Date.now())
-//       value.energy = Math.random()
-//       value.power = Math.random()
-//     })
-//     mocks.consumers.forEach(value => {
-//       value.energy = Math.random()
-//       value.time = new Date(Date.now())
-//     })
-//     mocks.prosumers.forEach(value => {
-//       value.time = new Date(Date.now())
-//       value.energyIn = Math.random()
-//       value.energyOut = Math.random()
-//     })
-//     setTimeout(() => resolve(mocks), 1000)
-//   })
-// }
-
 export default function (endpoint: string): Promise<DataFromAMIGO> {
   return new Promise(resolve => {
-    return resolve(mockData2)
+    let mocks = mockData
+    mocks.producers.forEach(value => {
+      value.time = new Date(Date.now())
+      value.energy = Math.random()
+      value.power = Math.random()
+    })
+    mocks.consumers.forEach(value => {
+      value.energy = Math.random()
+      value.time = new Date(Date.now())
+    })
+    mocks.prosumers.forEach(value => {
+      value.time = new Date(Date.now())
+      value.energyIn = Math.random()
+      value.energyOut = Math.random()
+    })
+    setTimeout(() => resolve(mocks), 1000)
   })
 }
+
+// export default function (endpoint: string): Promise<DataFromAMIGO> {
+//   return new Promise(resolve => {
+//     return resolve(mockData2)
+//   })
+// }
