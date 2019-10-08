@@ -42,12 +42,14 @@ export class BaseController {
 
     router.post(`${namespace}/login`, koaBody(), this.login.bind(this))
     router.post(`${namespace}/margin`, koaBody(), this.postUserMargin.bind(this))
+    router.get(`${namespace}/margin`, this.getUserMargin.bind(this))
     router.post(`${namespace}/close`, koaBody(), this.postCloseChannels.bind(this))
     router.get(`${namespace}/consumption`, this.getUserConsumptions.bind(this))
     router.get(`${namespace}/production`, this.getUserProductions.bind(this))
     router.get(`${namespace}/transaction`, this.getUserTransactions.bind(this))
     router.get(`${namespace}/excel/energy`, this.getUserExcelEnergy.bind(this))
     router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
+    router.get(`${namespace}/excel/transaction/result`, this.getResultXlsx.bind(this))
     router.get(`${namespace}/anchor`, this.getUserAnchors.bind(this))
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
     router.get(`${namespace}/price`, this.getUserPrice.bind(this))
@@ -149,10 +151,15 @@ export class BaseController {
     return Promise.all(neighbourIds.neighbours.map(async value => {
       try {
         const response = await axios.post(`${mapEthAddressToURL(who)}/closechannel/${value.neighbourId}`)
-        return response.data
+        return {
+          status: response.status,
+          message: `Closing channel between you and neighbour ${value.neighbourId} result: ${response.data}`,
+        }
       } catch (e) {
-        console.log(e);
-        return e.message
+        return {
+          status: 500,
+          message: `Could not close channel between you and neighbour ${value.neighbourId}: ${e.message}`,
+        }
       }
     }))
   }
@@ -163,12 +170,16 @@ export class BaseController {
       try {
         const result = await this.closeUserChannels(value.email)
         return {
-          [value.email]: result
+          [value.email]: result,
+          // @ts-ignore
+          status: result.every(value => value.status >= 400) ? 500 : 200
         }
       } catch (e) {
-        console.log(e);
         return {
-          [value.email]: e.message
+          [value.email]: {
+            message: e.message,
+            status: 500
+          }
         }
       }
     }))
@@ -191,15 +202,25 @@ export class BaseController {
       if (!status) {
         if (user.isAdmin) {
           ctx.response.body = await this.closeAllUsersChannels()
+          // @ts-ignore
+          if (ctx.response.body.every(value => value.status >= 400))
+            ctx.response.status = 500
+          else
+            ctx.response.status = 200
         } else {
           ctx.response.body = await this.closeUserChannels(<string>ctx.request.headers['from'])
+          // @ts-ignore
+          if (ctx.response.body.every(value => value.status >= 400))
+            ctx.response.status = 500
+          else
+            ctx.response.status = 200
         }
       }
     } catch (e) {
       console.log(e);
       ctx.response.status = 500
+      ctx.response.body = 'Error while closing channels. Error message: ' + e.message
     }
-    ctx.response.status = 200
   }
 
   getAdminExcelEnergy(ctx: Router.IRouterContext) {
@@ -220,6 +241,42 @@ export class BaseController {
     }
     ctx.response.body = await this.db.service.adminAnchor()
     ctx.response.status = 200
+  }
+
+  async getUserMargin(ctx: Router.IRouterContext) {
+    this.setCorsHeaders(ctx)
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      const cell = await this.db.service.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: who
+        }
+      })
+      if (cell.type !== 'prosumer') {
+        ctx.response.body = `Margin as enabled only for prosumer. You are ${cell.type}`
+        ctx.response.status = 400
+        return;
+      } else {
+        if (typeof cell.margin !== "number") {
+          ctx.response.body = 'Margin is null on the server'
+          ctx.status = 500
+          return;
+        } else {
+          ctx.response.body = {
+            margin: cell.margin
+          }
+          ctx.response.status = 200
+        }
+      }
+    } catch (e) {
+      console.log(e);
+      ctx.throw(500, e.message)
+      return
+    }
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
@@ -420,6 +477,16 @@ export class BaseController {
 
   }
 
+  async getResultXlsx(ctx: Router.IRouterContext) {
+    const fileName = `./result.xlsx`;
+    if (fs.existsSync(fileName)) {
+      ctx.body = fs.createReadStream(fileName);
+      ctx.attachment(fileName);
+    } else {
+      ctx.throw(400, "file result.xlsx is not found");
+    }
+  }
+
   async getUserExcelTransaction(ctx: Router.IRouterContext) {
     this.setCorsHeaders(ctx)
     check(ctx)
@@ -446,8 +513,11 @@ export class BaseController {
         this.excel.parseTransactionsToExcel(await this.db.service.userTransactions(who))
       }
       ctx.response.status = 200
+      ctx.response.body = `File result.xlsx created, it may be downloaded in endpoint /excel/transaction/result`
     } catch (e) {
       console.log(e);
+      ctx.response.body = e.message
+      ctx.response.status = 500
     }
 
   }
@@ -480,11 +550,11 @@ export class BaseController {
           ctx.response.status = 200
         } else {
           console.log('null!');
-          const errorMessage = 'initPower or initPrice is null'
+          const errorMessage = 'initPower or initPrice is null on server'
           ctx.throw(500, errorMessage)
         }
       } else {
-        ctx.response.body = 'this request allowed only for producer'
+        ctx.response.body = 'this request allowed only for producer, you are '+cell.type
         ctx.response.status = 400
       }
     } catch (e) {
@@ -605,7 +675,6 @@ export class BaseController {
     //If all ok, send 201 response
     ctx.response.status = 201
   };
-
 
 
   async getCheckUserNotarization(ctx: Router.IRouterContext) {
