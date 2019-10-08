@@ -398,7 +398,6 @@ export class BaseController {
         ctx.response.body = await this.db.service.userAnchor(who)
       }
 
-
       ctx.response.status = 200
     } catch (e) {
       console.log(e);

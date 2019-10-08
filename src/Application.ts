@@ -29,9 +29,9 @@ export default class Application {
   }
 
   fetchingData = async () => {
-    // const data = await fetchMocks('endpoint')
-    // await this.db.service.handleDataFromAMIGO(data)
-    await this.db.service.sendNewTransactionsToMQTT()
+    const data = await fetchMocks('endpoint')
+    await this.db.service.handleDataFromAMIGO(data)
+    // await this.db.service.sendNewTransactionsToMQTT()
   }
 
   postData = async () => {
@@ -59,18 +59,13 @@ export default class Application {
     // const data = await fetchMocks('endpoint')
     // await this.db.service.handleDataFromAMIGO(data)
 
-    cron.schedule('*/5 * * * * *', () => {
+    cron.schedule('0 */1 * * * *', () => {
       console.log("fetch data cron")
       this.fetchingData()
     });
-//TODO call specific function
-//     cron.schedule('0 */1 * * * *', () => {
-//       console.log("fetch data cron")
-//       this.fetchingData()
-//     });
-//     cron.schedule("0 0 0 * * *'", () => {
-//       console.log("post data cron")
-//       this.postData()
-//     })
+    // cron.schedule("0 0 0 * * ?", () => {
+    //   console.log("post data cron")
+    //   this.postData()
+    // })
   }
 }
