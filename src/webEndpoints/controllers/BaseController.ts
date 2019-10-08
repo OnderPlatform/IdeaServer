@@ -90,12 +90,26 @@ export class BaseController {
 
   async getCurrentUser(ctx: Router.IRouterContext) {
     check(ctx);
-    const email = ctx.request.header['from'];
+    const email = <string>ctx.request.headers['from'];
 
-    const user = await this.db.service.userRepository.findOneOrFail({
-      where: { email },
-    })
-    ctx.response.body = user;
+    try {
+      const user = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email
+        },
+        relations: ['cell']
+      })
+      ctx.body = {
+        isAdmin: user.isAdmin,
+        cellType: user.cell.type,
+        ethAddress: user.cell.ethAddress,
+        cellBalance: user.cell.balance,
+        cellName: user.cell.name,
+      }
+      ctx.status = 200
+    } catch (e) {
+      ctx.throw(500, e.message)
+    }
   }
 
   async findEthAddressByEmail(email: string): Promise<string> {
@@ -260,7 +274,7 @@ export class BaseController {
         }
       })
       if (cell.type !== 'prosumer') {
-        ctx.response.body = `Margin as enabled only for prosumer. You are ${cell.type}`
+        ctx.response.body = `Margin is enabled only for prosumer. You are ${cell.type}`
         ctx.response.status = 400
         return;
       } else {
@@ -294,6 +308,7 @@ export class BaseController {
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
   }
 
@@ -342,6 +357,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
   }
 
@@ -393,6 +409,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
   }
 
@@ -425,6 +442,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
   }
 
@@ -456,6 +474,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
   }
 
@@ -469,6 +488,7 @@ export class BaseController {
       ctx.response.status = 501
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
 
   }
@@ -511,8 +531,7 @@ export class BaseController {
       ctx.response.body = `File result.xlsx created, it may be downloaded in endpoint /excel/transaction/result`
     } catch (e) {
       console.log(e);
-      ctx.response.body = e.message
-      ctx.response.status = 500
+      ctx.throw(500, e.message)
     }
 
   }
@@ -568,6 +587,7 @@ export class BaseController {
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
 
   }
@@ -578,12 +598,15 @@ export class BaseController {
       console.log(ctx.request.body.email);
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
+      return
     }
     //Check if email and password are set
     let email = ctx.request.body.email
     let password = ctx.request.body.password
     if (!(email && password)) {
       ctx.response.status = 400
+      ctx.response.body = `You have to provide email and password together in body`
     }
 
     //Get user from database
@@ -593,7 +616,9 @@ export class BaseController {
     try {
       user = await userRepository.findOneOrFail({where: {email}});
     } catch (error) {
-      ctx.response.status = 401
+      ctx.response.status = 400
+      ctx.response.body = 'There is no such user'
+      return
     }
     var token = ""
     if (user != undefined && user.password == password) {
@@ -695,6 +720,7 @@ export class BaseController {
       }
     } catch (e) {
       console.log(e);
+      ctx.throw(500, e.message)
     }
   }
 
