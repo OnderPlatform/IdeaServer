@@ -8,7 +8,6 @@ import { User } from "../../database/models";
 import config from "../../config/config";
 import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
-import has = Reflect.has;
 
 type UserInfo = {
   userId: number,
@@ -569,7 +568,7 @@ export class BaseController {
           ctx.throw(500, errorMessage)
         }
       } else {
-        ctx.response.body = 'this request allowed only for producer, you are '+cell.type
+        ctx.response.body = 'this request allowed only for producer, you are ' + cell.type
         ctx.response.status = 400
       }
     } catch (e) {
@@ -624,11 +623,11 @@ export class BaseController {
     }
     var token = ""
     if (user != undefined && user.password == password) {
-      let userInfo: UserInfo = { userId: user.id, email: user.email, isAdmin: false };
+      let userInfo: UserInfo = {userId: user.id, email: user.email, isAdmin: false};
       if (user.isAdmin) {
         //Sing JWT, valid for 1 hour
         token = jwt.sign(
-          { ...userInfo, isAdmin: true },
+          {...userInfo, isAdmin: true},
           config.adminSecret,
           {expiresIn: "10m"}
         );
@@ -696,6 +695,22 @@ export class BaseController {
     ctx.response.status = 201
   };
 
+  async setDateFromAnchoringTable(data: string, user: User): Promise<string> {
+    const parsed = JSON.parse(data)
+    const anchoringEntry = await this.db.service.anchorRepository.findOne({
+      where: {
+        user: user
+      },
+      order: {
+        time: "DESC"
+      }
+    })
+    if (!anchoringEntry) {
+      throw new Error('it is no anchoring entry for user')
+    }
+    return JSON.stringify(Object.assign(parsed, {date: anchoringEntry.time}))
+  }
+
 
   async getCheckUserNotarization(ctx: Router.IRouterContext) {
     check(ctx)
@@ -712,16 +727,19 @@ export class BaseController {
       const isAdmin = user.isAdmin
       if (isAdmin) {
         const users = await this.db.service.userRepository.find({})
-        const checkingResult = Promise.all(users.map(async value => {
-          const infoToCheck = this.db.service.getAnchoringInfoToCheck(value)
-          const response = await axios.post('http://localhost:9505/timestamp/check', JSON.stringify(infoToCheck), {
+        const checkingResult = await Promise.all(users.map(async value => {
+          const infoToCheck = await this.db.service.getAnchoringDataForUser(value)
+          console.log("infoToCheck: ", infoToCheck);
+          const response = await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, value), {
             headers: {
               'Content-Type': 'application/json',
             }
           })
           if (response.status !== 200) {
-            ctx.response.status = 404
-            ctx.response.body = 'notarization check failed for user '+ value.email
+            return {
+              status: 404,
+              body: 'notarization check failed for user ' + value.email
+            }
           } else {
             try {
               const hash = await this.db.service.anchorRepository.findOneOrFail({
@@ -729,25 +747,32 @@ export class BaseController {
                   hashId: response.data.dataHash
                 }
               })
-                ctx.response.status = 200
-                ctx.response.body = 'Notarization check success'
+              return {
+                status: 200,
+                body: `User ${value.email} notarization check success`
+              }
             } catch (e) {
-              ctx.response.status = 500
-              ctx.response.body = 'hash is existing in notarizations server, but it was not found in anchoring table. User '+ value.email
               console.log(e);
+              return {
+                status: 500,
+                body: 'hash is existing in notarizations server, but it was not found in anchoring table. User ' + value.email
+              }
             }
           }
         }))
+        ctx.response.body = 'Notarizations checking result: '+JSON.stringify(checkingResult)
+        ctx.response.status = checkingResult.every(value => value.status === 200) ? 200 : 404
       } else {
-        const infoToCheck = this.db.service.getAnchoringInfoToCheck(user)
-        const response = await axios.post('http://localhost:9505/timestamp/check', JSON.stringify(infoToCheck), {
+        const infoToCheck = await this.db.service.getAnchoringDataForUser(user)
+        console.log("infoToCheck: ", infoToCheck);
+        const response = await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, user), {
           headers: {
             'Content-Type': 'application/json',
           }
         })
         if (response.status !== 200) {
           ctx.response.status = 404
-          ctx.response.body = 'notarization check failed for user '+ user.email
+          ctx.response.body = 'notarization check failed for user ' + user.email
         } else {
           try {
             const hash = await this.db.service.anchorRepository.findOneOrFail({
@@ -759,7 +784,7 @@ export class BaseController {
             ctx.response.body = 'Notarization check success'
           } catch (e) {
             ctx.response.status = 500
-            ctx.response.body = 'hash is existing in notarizations server, but it was not found in anchoring table. User '+ user.email
+            ctx.response.body = 'hash is existing in notarizations server, but it was not found in anchoring table. User ' + user.email
             console.log(e);
           }
         }

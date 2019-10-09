@@ -51,7 +51,7 @@ export default class Application {
     this.mqtt.add_handler((value: string, message: string) => this.db.service.newTransactionStateFromMQTT(value, message))
     this.mqtt.start()
     // console.log("post data cron")
-    this.postData()
+    // this.postData()
     //this.fetchingData()
     // await this.db.service.fetchDataFromAMIGO()
     // await this.db.service.sendNewTransactionsToMQTT()
@@ -59,13 +59,13 @@ export default class Application {
     // const data = await fetchMocks('endpoint')
     // await this.db.service.handleDataFromAMIGO(data)
 
-    cron.schedule('0 */1 * * * *', () => {
+    cron.schedule('0 */15 * * * *', () => {
       console.log("fetch data cron")
       this.fetchingData()
     });
-    // cron.schedule("0 0 0 * * ?", () => {
-    //   console.log("post data cron")
-    //   this.postData()
-    // })
+    cron.schedule("0 0 0 * * ?", () => {
+      console.log("post data cron")
+      this.postData()
+    })
   }
 }
