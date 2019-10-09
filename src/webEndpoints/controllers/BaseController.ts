@@ -759,8 +759,8 @@ export class BaseController {
           })
           if (response.status !== 200) {
             return {
-              status: 404,
-              body: 'notarization check failed for user ' + value.email
+              success: false,
+              who: value.email
             }
           } else {
             try {
@@ -770,8 +770,8 @@ export class BaseController {
                 }
               })
               return {
-                status: 200,
-                body: `User ${value.email} notarization check success`
+                success: true,
+                who: `${value.email}`
               }
             } catch (e) {
               console.log(e);
@@ -783,7 +783,7 @@ export class BaseController {
           }
         }))
         ctx.response.body = 'Notarizations checking result: '+JSON.stringify(checkingResult)
-        ctx.response.status = checkingResult.every(value => value.status === 200) ? 200 : 404
+        ctx.response.status = 200
       } else {
         const infoToCheck = await this.db.service.getAnchoringDataForUser(user)
         console.log("infoToCheck: ", infoToCheck);
@@ -793,8 +793,10 @@ export class BaseController {
           }
         })
         if (response.status !== 200) {
-          ctx.response.status = 404
-          ctx.response.body = 'notarization check failed for user ' + user.email
+          ctx.response.status = 200
+          ctx.response.body = {
+            success: false
+          }
         } else {
           try {
             const hash = await this.db.service.anchorRepository.findOneOrFail({
@@ -803,7 +805,9 @@ export class BaseController {
               }
             })
             ctx.response.status = 200
-            ctx.response.body = 'Notarization check success'
+            ctx.response.body = {
+              success: true,
+            }
           } catch (e) {
             ctx.response.status = 500
             ctx.response.body = 'hash is existing in notarizations server, but it was not found in anchoring table. User ' + user.email
