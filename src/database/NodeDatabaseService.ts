@@ -1071,7 +1071,7 @@ export class NodeDatabaseService {
     }
     return {
       ...hashingInfo,
-      time: anchoringEntry.time
+      time: '' + anchoringEntry.time
     }
   }
 
@@ -1095,8 +1095,8 @@ export class NodeDatabaseService {
         return {
           data: tradeTable.map(value => {
             return {
-              energyIn: value.energyIn,
-              energyOut: value.energyOut,
+              energyIn: ""+value.energyIn,
+              energyOut: ""+value.energyOut,
             }
           })
         }
@@ -1105,7 +1105,7 @@ export class NodeDatabaseService {
         return {
           data: tradeTable.map(value => {
             return {
-              energy: value.energy
+              energy: ""+value.energy
             }
           })
         }
@@ -1114,8 +1114,8 @@ export class NodeDatabaseService {
        return {
          data: tradeTable.map(value => {
            return {
-             energy: value.energy,
-             power: value.power
+             energy: ""+value.energy,
+             power: ""+value.power
            }
          })
        }
@@ -2058,18 +2058,38 @@ export class NodeDatabaseService {
     })
   }
 
-
-  async makePostRequest() {
-    const preAnchoring: HashingInfo = await this.tradeInfoForHashing()
-    const users = await this.userRepository.find({
-      relations: ['cell']
+  async addAnchoringDataToServer(anchoringData: string, user: User) {
+    console.log('Notarizing this one: ', JSON.stringify(anchoringData))
+    const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
     })
+    console.log('Response from anchor service: ', response.data)
+    try {
+      await this.anchorRepository.insert({
+        address: response.data.txHash,
+        hashId: response.data.dataHash,
+        time: +JSON.parse(anchoringData).date,
+        user: user
+      })
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
-    console.log(users.length)
-
-    for (const user of users) {
-      const type = user.cell.type
-      let anchoringData = {}
+  async getAnchoringDataForUser(user: User): Promise<string> {
+    console.assert(user)
+    const u = await this.userRepository.findOneOrFail({
+      where: {
+        id: user.id
+      },
+      relations: ['cell']
+      })
+    const preAnchoring: HashingInfo = await this.tradeInfoForHashing()
+    {
+      const type = u.cell.type
+      let anchoringData
       let time: number
 
       switch (type) {
@@ -2115,29 +2135,26 @@ export class NodeDatabaseService {
           throw new Error('unexpected type of cell')
         }
       }
-      console.log(JSON.stringify(anchoringData))
-      const response = await axios.post('http://localhost:9505/timestamp/add/', JSON.stringify(anchoringData), {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      console.log('Response from anchor service: ', response.data)
-      try {
-        await this.anchorRepository.insert({
-          address: response.data.txHash,
-          hashId: response.data.dataHash,
-          time: time,
-          user: user
-        })
-      } catch (e) {
-        console.log(e);
-      }
+
+      return JSON.stringify(anchoringData)
+
 
       //
       //time add to anchor (time)
       // add txhash(address), dataHash(hashId) to database anchor
 
 
+    }
+  }
+
+
+  async makePostRequest() {
+    const users = await this.userRepository.find({
+      relations: ['cell']
+    })
+    console.log(users.length)
+    for (const user of users) {
+      await this.addAnchoringDataToServer(await this.getAnchoringDataForUser(user), user)
     }
   }
 
