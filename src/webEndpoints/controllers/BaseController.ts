@@ -61,11 +61,10 @@ export class BaseController {
     router.get(`${namespace}/price`, this.getUserPrice.bind(this))
     router.post(`${namespace}/newuser`, koaBody(), this.newUser.bind(this))
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
-    router.get(`${namespace}/check`, this.getLastLogin.bind(this))
     router.get(`${namespace}/getCurrentUser`, this.getCurrentUser.bind(this))
     router.get(`${namespace}/getCellInfo`, this.getCellInfo.bind(this))
-    router.get(`${namespace}/checkNotarization`, this.getCheckUserNotarization.bind(this))
-    
+    router.get(`${namespace}/check`, this.getCheckUserNotarization.bind(this))
+
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
       this.excel.parse()
