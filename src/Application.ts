@@ -63,7 +63,7 @@ export default class Application {
       console.log("fetch data cron")
       this.fetchingData()
     });
-    cron.schedule("0 0 0 * * ?", () => {
+    cron.schedule("00 00 * * *", () => {
       console.log("post data cron")
       this.postData()
     })

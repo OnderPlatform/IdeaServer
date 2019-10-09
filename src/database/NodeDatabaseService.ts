@@ -1891,7 +1891,8 @@ export class NodeDatabaseService {
     const userAnchors = await this.anchorRepository.find({
       where: {
         user: user
-      }
+      },
+      relations: ['user', 'user.cell']
     })
 
     if (!userAnchors.length) {
