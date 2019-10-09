@@ -63,6 +63,7 @@ export class BaseController {
     router.get(`${namespace}/alluser`, this.listAll.bind(this))
     router.get(`${namespace}/check`, this.getLastLogin.bind(this))
     router.get(`${namespace}/getCurrentUser`, this.getCurrentUser.bind(this))
+    router.get(`${namespace}/getCellInfo`, this.getCellInfo.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
@@ -87,24 +88,46 @@ export class BaseController {
     return router
   }
 
-
   async getCurrentUser(ctx: Router.IRouterContext) {
-    check(ctx);
-    const email = <string>ctx.request.headers['from'];
-
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
     try {
+      const ethId: string = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.userRepository.findOneOrFail({
         where: {
-          email
+          email: <string>ctx.request.headers['from']
         },
-        relations: ['cell']
+      })
+      ctx.response.body = {
+        isAdmin: user.isAdmin,
+        ethAddress: ethId
+      }
+      ctx.response.status = 200
+    } catch (e) {
+      console.log(e);
+      ctx.throw(500, e.message)
+    }
+  }
+
+  async getCellInfo(ctx: Router.IRouterContext) {
+    check(ctx);
+    if (ctx.response.status == 401) {
+      return
+    }
+    try {
+      const params = new URLSearchParams(ctx.request.querystring)
+      const ethId = params.get('ethId')
+      const cell = await this.db.service.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: ethId
+        }
       })
       ctx.body = {
-        isAdmin: user.isAdmin,
-        cellType: user.cell.type,
-        ethAddress: user.cell.ethAddress,
-        cellBalance: user.cell.balance,
-        cellName: user.cell.name,
+        cellType: cell.type,
+        cellBalance: cell.balance,
+        cellName: cell.name,
       }
       ctx.status = 200
     } catch (e) {
