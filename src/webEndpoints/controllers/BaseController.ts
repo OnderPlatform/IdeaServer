@@ -749,42 +749,90 @@ export class BaseController {
       const isAdmin = user.isAdmin
       if (isAdmin) {
         const users = await this.db.service.userRepository.find({})
-        ctx.response.body = await Promise.all(users.map(async value => {
-          const infoToCheck = await this.db.service.getAnchoringDataForUser(value)
-          console.log("infoToCheck: ", infoToCheck);
-          return await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, value), {
+        ctx.response.body = await Promise.all(users.map(async currentUser => {
+          const infoToCheck = await this.db.service.getAnchoringDataForUser(currentUser)
+          const oldDate = (await this.db.service.anchorRepository.findOneOrFail({
+            where: {
+              user: currentUser
+            },
+            order: {
+              time: "DESC"
+            }
+          })).lastCheckingDate
+          return await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, currentUser), {
             headers: {
               'Content-Type': 'application/json',
             }
-          }).then(value1 => {
+          }).then(async notarizationServerResponse => {
+            if (notarizationServerResponse.status === 200) {
+              const lastEntry = await this.db.service.anchorRepository.findOneOrFail({
+                where: {
+                  user: currentUser
+                },
+                order: {
+                  time: "DESC"
+                }
+              })
+              await this.db.service.anchorRepository.update({
+                id: lastEntry.id
+              }, {
+                lastCheckingDate: (new Date()).toISOString()
+              })
+            }
             return {
-              who: value.email,
-              success: value1.status === 200
+              who: currentUser.email,
+              success: notarizationServerResponse.status === 200,
+              lastChecked: oldDate
             }
           })
             .catch(reason => {
-              console.log(reason);
               return {
-                who: value.email,
-                success: reason.response.status !== 404
+                who: currentUser.email,
+                success: reason.response.status !== 404,
+                lastChecked: oldDate
               }
             })
         }))
         ctx.response.status = 200
       } else {
         const infoToCheck = await this.db.service.getAnchoringDataForUser(user)
+        const oldDate = (await this.db.service.anchorRepository.findOneOrFail({
+          where: {
+            user: user
+          },
+          order: {
+            time: "DESC"
+          }
+        })).lastCheckingDate
         const response = await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, user), {
           headers: {
             'Content-Type': 'application/json',
           }
-        }).then(value => {
+        }).then(async notarizationServerResponse => {
+          if (notarizationServerResponse.status === 200) {
+            const lastEntry = await this.db.service.anchorRepository.findOneOrFail({
+              where: {
+                user: user
+              },
+              order: {
+                time: "DESC"
+              }
+            })
+            await this.db.service.anchorRepository.update({
+              id: lastEntry.id
+            }, {
+              lastCheckingDate: (new Date()).toISOString()
+            })
+          }
           ctx.response.body = {
-            success: value.status === 200
+            success: notarizationServerResponse.status === 200,
+            lastChecked: oldDate
           }
         })
           .catch(reason => {
             ctx.response.body = {
-              success: reason.response.status !== 404
+              success: reason.response.status !== 404,
+              lastChecked: oldDate
             }
           })
         ctx.response.status = 200

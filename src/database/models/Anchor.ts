@@ -17,4 +17,7 @@ export class Anchor extends BaseEntity {
 
   @Column()
   address!: string
+
+  @Column({type: 'timestamptz', default: 'now()'})
+  lastCheckingDate!: string
 }

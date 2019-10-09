@@ -2072,7 +2072,8 @@ export class NodeDatabaseService {
         address: response.data.txHash,
         hashId: response.data.dataHash,
         time: +JSON.parse(anchoringData).date,
-        user: user
+        user: user,
+        lastCheckingDate: (new Date()).toISOString()
       })
     } catch (e) {
       console.log(e);
