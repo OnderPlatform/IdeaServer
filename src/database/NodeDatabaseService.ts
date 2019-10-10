@@ -4,7 +4,7 @@ import { getCustomRepository, IsNull, Raw } from "typeorm";
 import { TradeRepository } from "./repositories/TradeRepository";
 import { TransactionRepository } from "./repositories/TransactionRepository";
 import { UserRepository } from "./repositories/UserRepository";
-import { initialMockData } from "../mockData/config";
+import { EthAddresses, initialMockData } from "../mockData/config";
 
 import {
   AdminAnchor,
@@ -30,6 +30,7 @@ import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
 import { User } from "./models";
+import { postPricesToAMIGO } from "../net/amigoCommunication";
 
 const DEFAULT_BALANCE = -1
 const DEFAULT_MARGIN = 5
@@ -104,6 +105,34 @@ export class NodeDatabaseService {
     }
     console.log('Mock data initialization ended.');
   }
+
+  async sendPricesToAmigo() {
+    for (const value of EthAddresses) {
+      const cell = await this.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: value
+        }
+      })
+      const tradeEntry = await this.tradeRepository.findOneOrFail({
+        where: {
+          cell: cell
+        },
+        order: {
+          time: "DESC"
+        }
+      })
+
+      const response = await postPricesToAMIGO({
+        ethAddress: value,
+        cellType: this.converCellTypeToAMIGOCellType(cell.type),
+        value: tradeEntry.price,
+        timeStamp: tradeEntry.time
+      })
+      console.log(`sending to amigo server response: ${response}`)
+
+    }
+  }
+
 
   async fetchDataFromAMIGO() {
     // getting all cells
