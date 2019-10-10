@@ -31,6 +31,7 @@ export default class Application {
   fetchingData = async () => {
     const data = await fetchMocks('endpoint')
     await this.db.service.handleDataFromAMIGO(data)
+    await this.db.service.sendPricesToAmigo()
     // await this.db.service.sendNewTransactionsToMQTT()
   }
 

@@ -12,13 +12,9 @@ import {
   AdminProductions,
   AMIGOCell,
   Authorization,
-  CellRealData,
-  ConsumerData,
   DataFromAMIGO,
   HashingInfo,
   InitDataFromAMIGO,
-  ProducerData,
-  ProsumerData,
   UserAnchor,
   UserConsumption,
   UserMargin,
@@ -133,123 +129,30 @@ export class NodeDatabaseService {
     }
   }
 
+  mapCellTypeToPurposeKey(type: "producer" | "consumer" | "prosumer" | "operator") {
+    switch (type) {
+      case "producer":
+        return 'TMMM'
+      case "prosumer":
+        throw new Error('not imlemented yet') // todo not implemented
+      case "consumer":
+        return 'FACT'
+      default:
+        throw new Error(`unknown cell type ${type}`)
+    }
+  }
 
-  async fetchDataFromAMIGO() {
-    // getting all cells
-    const prosumers = await this.cellRepository.find({
-      where: {
-        type: 'prosumer'
-      }
-    })
-    const consumers = await this.cellRepository.find({
-      where: {
-        type: 'consumer'
-      }
-    })
-    const producers = await this.cellRepository.find({
-      where: {
-        type: 'producer'
-      }
-    })
-
-    const prosumerPreparedDatas = await Promise.all(prosumers.map(value => value.mrid).map(async value => {
-      //getting data from amigo
-      const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
-        auth: {
-          username: LOGIN,
-          password: PASSWORD
-        }
-      })
-      const prosumerData: CellRealData[] = response.data
-      let energyIn = 0
-      let energyOut = 0
-      prosumerData.forEach(value1 => {
-        if (value1.value < 0) {
-          energyIn -= value1.value
-        } else {
-          energyOut += value1.value
-        }
-      })
-      // console.log("energyIn", energyIn)
-      // console.log("energyOut", energyOut)
-      // const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
-      // const energyOut = prosumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value + (currentValue.value > 0 ? 1 : 0), 0)
-      const prosumerEntry = await this.cellRepository.findOneOrFail({
-        where: {
-          mrid: value
-        }
-      })
-
-      const prosumerPreparedData: ProsumerData = {
-        time: new Date(Date.now()),
-        prosumerEthAddress: prosumerEntry.ethAddress,
-        energyIn: energyIn / 60,  // kV*h
-        energyOut: energyOut / 60
-      }
-
-      return prosumerPreparedData
-    }))
-
-    const consumerPreparedDatas = await Promise.all(consumers.map(value => value.mrid).map(async value => {
-      const response = await axios.get(`${AMIGO_SERVER}/api/energyConsumer/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
-        auth: {
-          username: LOGIN,
-          password: PASSWORD
-        }
-      })
-      const consumerData: CellRealData[] = response.data
-      const energy = consumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value, 0)
-      const consumerEntry = await this.cellRepository.findOneOrFail({
-        where: {
-          mrid: value
-        }
-      })
-
-      const consumerPreparedData: ConsumerData = {
-        time: new Date(Date.now()),
-        energy: energy / 60,
-        consumerEthAddress: consumerEntry.ethAddress
-      }
-
-      return consumerPreparedData
-    }))
-
-    const producerPreparedDatas = await Promise.all(producers.map(value => value.mrid).map(async value => {
-      const response = await axios.get(`${AMIGO_SERVER}/api/generatingUnit/${value}/p/row?purposeKey=TM1M&start=PT-15M&end=now`, {
-        auth: {
-          username: LOGIN,
-          password: PASSWORD
-        }
-      })
-      const producerData: CellRealData[] = response.data
-      const energy = producerData.reduce((previousValue, currentValue) => previousValue + currentValue.value, 0)
-      const producerEntry = await this.cellRepository.findOneOrFail({
-        where: {
-          mrid: value
-        }
-      })
-
-      const power = energy //todo: where should we take the power?
-      const producerPreparedData: ProducerData = {
-        power: power,
-        energy: energy / 60,
-        time: new Date(Date.now()),
-        producerEthAddress: producerEntry.ethAddress
-      }
-
-      return producerPreparedData
-    }))
-
-
-    // console.log("prosumerPreparedDatas: ", prosumerPreparedDatas);
-    // console.log("consumerPreparedDatas: ", consumerPreparedDatas);
-    // console.log("producerPreparedDatas: ", producerPreparedDatas);
-
-    this.handleDataFromAMIGO({
-      prosumers: prosumerPreparedDatas,
-      producers: producerPreparedDatas,
-      consumers: consumerPreparedDatas
-    })
+  converCellTypeToAMIGOCellType(type: "producer" | "consumer" | "prosumer" | "operator") {
+    switch (type) {
+      case "prosumer":
+        return "energyStoragingUnit"
+      case "producer":
+        return "generatingUnit"
+      case "consumer":
+        return "energyConsumer"
+      default:
+        throw new Error(`unknown cell type: ${type}`)
+    }
   }
 
   async initialDataForOperator() {
@@ -321,7 +224,6 @@ export class NodeDatabaseService {
       })
     })
   }
-
 
   async handleInitDataFromAMIGO(data: InitDataFromAMIGO) {
     await Promise.all(data.consumers.map(async value => {
@@ -1124,8 +1026,8 @@ export class NodeDatabaseService {
         return {
           data: tradeTable.map(value => {
             return {
-              energyIn: ""+value.energyIn,
-              energyOut: ""+value.energyOut,
+              energyIn: "" + value.energyIn,
+              energyOut: "" + value.energyOut,
             }
           })
         }
@@ -1134,20 +1036,20 @@ export class NodeDatabaseService {
         return {
           data: tradeTable.map(value => {
             return {
-              energy: ""+value.energy
+              energy: "" + value.energy
             }
           })
         }
       }
       case "producer": {
-       return {
-         data: tradeTable.map(value => {
-           return {
-             energy: ""+value.energy,
-             power: ""+value.power
-           }
-         })
-       }
+        return {
+          data: tradeTable.map(value => {
+            return {
+              energy: "" + value.energy,
+              power: "" + value.power
+            }
+          })
+        }
       }
       default: {
         throw new Error('unexpected cell type while requesting hashing info')
@@ -2116,7 +2018,7 @@ export class NodeDatabaseService {
         id: user.id
       },
       relations: ['cell']
-      })
+    })
     const preAnchoring: HashingInfo = await this.tradeInfoForHashing()
     {
       const type = u.cell.type
@@ -2177,7 +2079,6 @@ export class NodeDatabaseService {
 
     }
   }
-
 
   async makePostRequest() {
     const users = await this.userRepository.find({
