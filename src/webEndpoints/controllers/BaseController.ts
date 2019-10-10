@@ -55,7 +55,6 @@ export class BaseController {
     router.get(`${namespace}/transaction`, this.getUserTransactions.bind(this))
     router.get(`${namespace}/excel/energy`, this.getUserExcelEnergy.bind(this))
     router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
-    router.get(`${namespace}/excel/transaction/result`, this.getResultXlsx.bind(this))
     router.get(`${namespace}/anchor`, this.getUserAnchors.bind(this))
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
     router.get(`${namespace}/price`, this.getUserPrice.bind(this))
@@ -102,7 +101,8 @@ export class BaseController {
       })
       ctx.response.body = {
         isAdmin: user.isAdmin,
-        ethAddress: ethId
+        ethAddress: ethId,
+        email: user.email
       }
       ctx.response.status = 200
     } catch (e) {
@@ -551,7 +551,7 @@ export class BaseController {
         this.excel.parseTransactionsToExcel(await this.db.service.userTransactions(who))
       }
       ctx.response.status = 200
-      ctx.response.body = `File result.xlsx created, it may be downloaded in endpoint /excel/transaction/result`
+      this.getResultXlsx(ctx)
     } catch (e) {
       console.log(e);
       ctx.throw(500, e.message)
