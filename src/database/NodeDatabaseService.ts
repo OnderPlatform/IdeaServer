@@ -12,9 +12,10 @@ import {
   AdminProductions,
   AMIGOCell,
   Authorization,
+  CellRealData, ConsumerData,
   DataFromAMIGO,
   HashingInfo,
-  InitDataFromAMIGO,
+  InitDataFromAMIGO, ProducerData, ProsumerData,
   UserAnchor,
   UserConsumption,
   UserMargin,
@@ -23,7 +24,7 @@ import {
   UserTransactions
 } from "../mockData/interfaces";
 import { AnchorRepository } from "./repositories/AnchorRepository";
-import { AMIGO_SERVER, LOGIN, PASSWORD } from "../webEndpoints/endpoints/amigoConfig";
+import { AMIGO_SERVER } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
 import { User } from "./models";
 import { postPricesToAMIGO } from "../net/amigoCommunication";
@@ -31,8 +32,8 @@ import { postPricesToAMIGO } from "../net/amigoCommunication";
 const DEFAULT_BALANCE = -1
 const DEFAULT_MARGIN = 5
 const DEFAULT_OPCOEF = 4
-const DEFAULT_INITPRICE = [0., 50., 100]
-const DEFAULT_INITPOWER = [0., 50., 100]
+const DEFAULT_INITPRICE = [0,	2,	3,	4,	5]
+const DEFAULT_INITPOWER = [0,	3,	5,	7,	9]
 
 export class NodeDatabaseService {
   public readonly cellRepository: CellRepository = getCustomRepository(CellRepository)
@@ -102,6 +103,107 @@ export class NodeDatabaseService {
     console.log('Mock data initialization ended.');
   }
 
+
+  async fetchAndHandleDataFromAMIGO() {
+    // getting all cells
+    const prosumers = await this.cellRepository.find({
+      where: {
+        type: 'prosumer'
+      }
+    })
+    const consumers = await this.cellRepository.find({
+      where: {
+        type: 'consumer'
+      }
+    })
+    const producers = await this.cellRepository.find({
+      where: {
+        type: 'producer'
+      }
+    })
+
+    const prosumerPreparedDatas = await Promise.all(prosumers.map(value => value.mrid).map(async mrid => {
+      //getting data from amigo
+      const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${mrid}/p`)
+      const prosumerData: CellRealData = response.data
+      let energyIn = 0
+      let energyOut = 0
+      if (prosumerData.value < 0) {
+        energyIn -= prosumerData.value
+      } else {
+        energyOut += prosumerData.value
+      }
+      // console.log("energyIn", energyIn)
+      // console.log("energyOut", energyOut)
+      // const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
+      // const energyOut = prosumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value + (currentValue.value > 0 ? 1 : 0), 0)
+      const prosumerEntry = await this.cellRepository.findOneOrFail({
+        where: {
+          mrid: mrid
+        }
+      })
+
+      const prosumerPreparedData: ProsumerData = {
+        time: prosumerData.timeStamp,
+        prosumerEthAddress: prosumerEntry.ethAddress,
+        energyIn: energyIn,
+        energyOut: energyOut
+      }
+
+      return prosumerPreparedData
+    }))
+
+    const consumerPreparedDatas = await Promise.all(consumers.map(value => value.mrid).map(async value => {
+      const response = await axios.get(`${AMIGO_SERVER}/api/energyConsumer/${value}/p`)
+      const consumerData: CellRealData = response.data
+      const consumerEntry = await this.cellRepository.findOneOrFail({
+        where: {
+          mrid: value
+        }
+      })
+
+      const consumerPreparedData: ConsumerData = {
+        time: consumerData.timeStamp,
+        energy: consumerData.value,
+        consumerEthAddress: consumerEntry.ethAddress
+      }
+
+      return consumerPreparedData
+    }))
+
+    const producerPreparedDatas = await Promise.all(producers.map(value => value.mrid).map(async value => {
+      const powerResponse = await axios.get(`${AMIGO_SERVER}/api/generatingUnit/${value}/p`)
+      const energyResponse = await axios.get(`${AMIGO_SERVER}/api/generatingUnit/${value}/e`)
+      const producerPowerData: CellRealData = powerResponse.data
+      const producerEnergyData: CellRealData = energyResponse.data
+      const producerEntry = await this.cellRepository.findOneOrFail({
+        where: {
+          mrid: value
+        }
+      })
+
+      const producerPreparedData: ProducerData = {
+        power: producerPowerData.value,
+        energy: producerEnergyData.value,
+        time: producerPowerData.timeStamp,
+        producerEthAddress: producerEntry.ethAddress
+      }
+
+      return producerPreparedData
+    }))
+
+
+    // console.log("prosumerPreparedDatas: ", prosumerPreparedDatas);
+    // console.log("consumerPreparedDatas: ", consumerPreparedDatas);
+    // console.log("producerPreparedDatas: ", producerPreparedDatas);
+
+    this.handleDataFromAMIGO({
+      prosumers: prosumerPreparedDatas,
+      producers: producerPreparedDatas,
+      consumers: consumerPreparedDatas
+    })
+  }
+
   async sendPricesToAmigo() {
     for (const value of EthAddresses) {
       const cell = await this.cellRepository.findOneOrFail({
@@ -158,15 +260,13 @@ export class NodeDatabaseService {
   async initialDataForOperator() {
     await this.cellRepository.insert({
       ethAddress: initialMockData.operator.ethAddress,
-      mrid: '_operator',
+      mrid: initialMockData.operator.ethAddress,
       name: 'Operator',
-      balance: DEFAULT_BALANCE,
       opCoef: DEFAULT_OPCOEF,
       type: 'operator'
     })
   }
 
-  
 
   async fetchInitialDataFromAMIGO() {
     // setInterval(async () => {
@@ -218,7 +318,6 @@ export class NodeDatabaseService {
         ethAddress: value.ethAddress,
         type: 'consumer',
         name: value.name,
-        balance: DEFAULT_BALANCE,
         mrid: value.mrid
       })
     }))
@@ -230,7 +329,6 @@ export class NodeDatabaseService {
         type: 'producer',
         initPower: DEFAULT_INITPOWER,
         initPrice: DEFAULT_INITPRICE,
-        balance: DEFAULT_BALANCE,
         mrid: value.mrid
       })
     }))
@@ -241,7 +339,6 @@ export class NodeDatabaseService {
         type: 'prosumer',
         ethAddress: value.ethAddress,
         margin: DEFAULT_MARGIN,
-        balance: DEFAULT_BALANCE,
         mrid: value.mrid
       })
     }))
@@ -249,7 +346,7 @@ export class NodeDatabaseService {
   }
 
   async handleDataFromAMIGO(data: DataFromAMIGO) {
-    // console.log('Got data: ', data);
+    console.log('Got data: ', data);
     // 1. Inserting new entries
     await Promise.all(data.producers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
@@ -259,7 +356,7 @@ export class NodeDatabaseService {
       })
 
       await this.tradeRepository.insert({
-        time: value.time.toISOString(),
+        time: value.time,
         energy: value.energy,
         power: value.power,
         cell: cell,
@@ -276,7 +373,7 @@ export class NodeDatabaseService {
 
       await this.tradeRepository.insert({
         cell: cell,
-        time: value.time.toISOString(),
+        time: value.time,
         energy: value.energy,
         type: 'consumer',
         price: 0
@@ -300,7 +397,7 @@ export class NodeDatabaseService {
 
       await this.tradeRepository.insert({
         cell: cell,
-        time: value.time.toISOString(),
+        time: value.time,
         energyIn: value.energyIn,
         energyOut: value.energyOut,
         type: 'prosumer',
@@ -376,8 +473,10 @@ export class NodeDatabaseService {
       //     return previousValue + (value.power < currentValue ? 1 : 0)
       //   }, 0)
       // const price = cell.initPrice[index]
-      const price = cell.initPrice[cell.initPower.reduce((previousValue, currentValue) => previousValue + (currentValue < value.power ? 1 : 0), 0)]
-
+      let index = cell.initPower.reduce((previousValue, currentValue) => previousValue + (currentValue < value.power ? 1 : 0), 0)
+      if (index >= cell.initPower.length)
+        index = cell.initPower.length - 1
+      const price = cell.initPrice[index]
 
       await this.tradeRepository.update({
         id: lastProducerEntry.id

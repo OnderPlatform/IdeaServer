@@ -29,9 +29,11 @@ export default class Application {
   }
 
   fetchingData = async () => {
-    const data = await fetchMocks('endpoint')
-    await this.db.service.handleDataFromAMIGO(data)
-    await this.db.service.sendPricesToAmigo()
+    // const data = await fetchMocks('endpoint')
+    // const data = await this.db.service.fetchAndHandleDataFromAMIGO()
+    await this.db.service.fetchAndHandleDataFromAMIGO()
+    // await this.db.service.handleDataFromAMIGO(data)
+    // await this.db.service.sendPricesToAmigo()
     // await this.db.service.sendNewTransactionsToMQTT()
   }
 
@@ -45,16 +47,16 @@ export default class Application {
     // await this.db.service.initMockData()
     const tmp = await this.db.service.cellRepository.find()
     if (!tmp.length) {
-      // await this.db.service.fetchInitialDataFromAMIGO()
-      // await this.db.service.initialDataForOperator()
-      await this.db.service.initMockData()
+      await this.db.service.fetchInitialDataFromAMIGO()
+      await this.db.service.initialDataForOperator()
+      // await this.db.service.initMockData()
     }
     this.mqtt.add_handler((value: string, message: string) => this.db.service.newTransactionStateFromMQTT(value, message))
     this.mqtt.start()
     // console.log("post data cron")
     // this.postData()
     //this.fetchingData()
-    // await this.db.service.fetchDataFromAMIGO()
+
     // await this.db.service.sendNewTransactionsToMQTT()
 
     // const data = await fetchMocks('endpoint')

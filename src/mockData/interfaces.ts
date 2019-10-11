@@ -1,18 +1,18 @@
 export interface ProducerData {
-  time: Date,
+  time: string,
   energy: number,
   power: number,
   producerEthAddress: string
 }
 
 export interface ConsumerData {
-  time: Date,
+  time: string,
   energy: number,
   consumerEthAddress: string
 }
 
 export interface ProsumerData {
-  time: Date,
+  time: string,
   energyIn: number,
   energyOut: number,
   prosumerEthAddress: string
