@@ -2,7 +2,7 @@ import WebServer from './webEndpoints/WebServer'
 import NodeDatabase from './database/NodeDatabase'
 import * as mqtt_cl from './mqtt/Mqtt_client'
 import * as cron from 'node-cron'
-import fetchMocks from './mockData/fetchDataFromAMIGO'
+import fetchMocks from './mockData/fetchMockDataFromAMIGO'
 import config from "./config/config"
 
 export default class Application {

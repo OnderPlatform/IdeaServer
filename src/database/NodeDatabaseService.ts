@@ -166,6 +166,8 @@ export class NodeDatabaseService {
     })
   }
 
+  
+
   async fetchInitialDataFromAMIGO() {
     // setInterval(async () => {
     //   await fetchInitialDataFromAMIGO('http:/127.0.0.1')
@@ -174,24 +176,9 @@ export class NodeDatabaseService {
     //     })
     //   this.sendNewTransactionsToMQTT()
     // }, 2000)
-    const prosumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit`, {
-      auth: {
-        username: LOGIN,
-        password: PASSWORD
-      }
-    })
-    const consumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyConsumer`, {
-      auth: {
-        username: LOGIN,
-        password: PASSWORD
-      }
-    })
-    const producersResponse = await axios.get(`${AMIGO_SERVER}/api/generatingUnit`, {
-      auth: {
-        username: LOGIN,
-        password: PASSWORD
-      }
-    })
+    const prosumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit`)
+    const consumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyConsumer`)
+    const producersResponse = await axios.get(`${AMIGO_SERVER}/api/generatingUnit`)
     // console.log('prosumersResponse: ', prosumersResponse.data);
     // console.log('consumersResponse: ', consumersResponse.data);
     // console.log('producersResponse: ', producersResponse.data);
