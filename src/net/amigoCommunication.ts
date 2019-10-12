@@ -62,6 +62,7 @@ function mapCellTypeToEndpoint(type: "generatingUnit" | "energyStoragingUnit" | 
   }
 }
 
+// todo: it is working incorrect
 export async function postPricesToAMIGO({ethAddress, cellType, value, timeStamp}: PostDataToAMIGOProps) {
   if (cellType === "energyStoragingUnit") // todo: implement for prosumer
     return

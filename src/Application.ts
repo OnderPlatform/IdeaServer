@@ -31,7 +31,7 @@ export default class Application {
   fetchingData = async () => {
     // const data = await fetchMocks('endpoint')
     // const data = await this.db.service.fetchAndHandleDataFromAMIGO()
-    await this.db.service.fetchAndHandleDataFromAMIGO()
+    // await this.db.service.fetchAndHandleDataFromAMIGO()
     // await this.db.service.handleDataFromAMIGO(data)
     // await this.db.service.sendPricesToAmigo()
     // await this.db.service.sendNewTransactionsToMQTT()
@@ -59,8 +59,8 @@ export default class Application {
 
     // await this.db.service.sendNewTransactionsToMQTT()
 
-    // const data = await fetchMocks('endpoint')
-    // await this.db.service.handleDataFromAMIGO(data)
+    const data = await fetchMocks('endpoint')
+    await this.db.service.handleDataFromAMIGO(data)
 
     cron.schedule('0 */15 * * * *', () => {
       console.log("fetch data cron")
