@@ -12,10 +12,13 @@ import {
   AdminProductions,
   AMIGOCell,
   Authorization,
-  CellRealData, ConsumerData,
+  CellRealData,
+  ConsumerData,
   DataFromAMIGO,
   HashingInfo,
-  InitDataFromAMIGO, ProducerData, ProsumerData,
+  InitDataFromAMIGO,
+  ProducerData,
+  ProsumerData,
   UserAnchor,
   UserConsumption,
   UserMargin,
@@ -27,13 +30,15 @@ import { AnchorRepository } from "./repositories/AnchorRepository";
 import { AMIGO_SERVER } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
 import { User } from "./models";
-import { postPricesToAMIGO } from "../net/amigoCommunication";
+import { converCellTypeToAMIGOCellType, mapCellTypeToEndpoint, mapCellTypeToPurposeKey } from "../utils/mapCellTypes";
+import { NotEquals } from "class-validator";
 
 const DEFAULT_BALANCE = -1
 const DEFAULT_MARGIN = 5
 const DEFAULT_OPCOEF = 4
 const DEFAULT_INITPRICE = [0,	1,	2,	3,	4]
 const DEFAULT_INITPOWER = [0,	3,	5,	7,	9]
+
 
 export class NodeDatabaseService {
   public readonly cellRepository: CellRepository = getCustomRepository(CellRepository)
@@ -124,7 +129,7 @@ export class NodeDatabaseService {
 
     const prosumerPreparedDatas = await Promise.all(prosumers.map(value => value.mrid).map(async mrid => {
       //getting data from amigo
-      const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${mrid}/p`)
+      const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${mrid}/e`)
       const prosumerData: CellRealData = response.data
       let energyIn = 0
       let energyOut = 0
@@ -154,7 +159,7 @@ export class NodeDatabaseService {
     }))
 
     const consumerPreparedDatas = await Promise.all(consumers.map(value => value.mrid).map(async value => {
-      const response = await axios.get(`${AMIGO_SERVER}/api/energyConsumer/${value}/p`)
+      const response = await axios.get(`${AMIGO_SERVER}/api/energyConsumer/${value}/e`)
       const consumerData: CellRealData = response.data
       const consumerEntry = await this.cellRepository.findOneOrFail({
         where: {
@@ -205,57 +210,11 @@ export class NodeDatabaseService {
   }
 
   async sendPricesToAmigo() {
-    for (const value of EthAddresses) {
-      const cell = await this.cellRepository.findOneOrFail({
-        where: {
-          ethAddress: value
-        }
-      })
-      const tradeEntry = await this.tradeRepository.findOneOrFail({
-        where: {
-          cell: cell
-        },
-        order: {
-          time: "DESC"
-        }
-      })
-
-      const response = await postPricesToAMIGO({
-        ethAddress: value,
-        cellType: this.converCellTypeToAMIGOCellType(cell.type),
-        value: tradeEntry.price,
-        timeStamp: tradeEntry.time
-      })
-      console.log(`sending to amigo server response: ${response}`)
-
+    for (const ethAddress of EthAddresses.slice(0, -1)) {
+      await this.postPricesToAMIGOForCell(ethAddress)
     }
   }
 
-  mapCellTypeToPurposeKey(type: "producer" | "consumer" | "prosumer" | "operator") {
-    switch (type) {
-      case "producer":
-        return 'TMMM'
-      case "prosumer":
-        throw new Error('not imlemented yet') // todo not implemented
-      case "consumer":
-        return 'FACT'
-      default:
-        throw new Error(`unknown cell type ${type}`)
-    }
-  }
-
-  converCellTypeToAMIGOCellType(type: "producer" | "consumer" | "prosumer" | "operator") {
-    switch (type) {
-      case "prosumer":
-        return "energyStoragingUnit"
-      case "producer":
-        return "generatingUnit"
-      case "consumer":
-        return "energyConsumer"
-      default:
-        throw new Error(`unknown cell type: ${type}`)
-    }
-  }
 
   async initialDataForOperator() {
     await this.cellRepository.insert({
@@ -2034,5 +1993,55 @@ export class NodeDatabaseService {
 
   async sendDataToAnchor() {
     //create anchor to appropriete user with appropriete data
+  }
+
+  async postPricesToAMIGOForCell(ethAddress: string, timeStamp: string = (new Date()).toISOString()) {
+    const cell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: ethAddress
+      }
+    })
+    const lastTradeEntry = await this.tradeRepository.findOneOrFail({
+      where: {
+        cell: cell,
+      },
+      order: {
+        time: "DESC"
+      }
+    })
+
+    const cellAMIGOType = converCellTypeToAMIGOCellType(cell.type)
+    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/${mapCellTypeToEndpoint(cellAMIGOType)}?purposeKey=${mapCellTypeToPurposeKey(cellAMIGOType)}`
+    if (typeof cell.initPrice != 'object')
+      throw new Error('initPrice is not an object')
+    switch (cellAMIGOType) {
+      case "generatingUnit": {
+        const response = await axios.post(url, cell.initPrice.map(initPriceValue => ({
+          timeStamp,
+          measurementValueQuality:
+            {
+              validity: "GOOD",
+              source: "DERIVED"
+            },
+          value: initPriceValue
+        })))
+        // console.log(response.data);
+        break;
+      }
+      case "energyConsumer":
+      case "energyStoragingUnit": {
+        const response = await axios.post(url, [{
+          timeStamp: lastTradeEntry.time,
+          measurementValueQuality:
+            {
+              validity: "GOOD",
+              source: "DERIVED"
+            },
+          value: lastTradeEntry.price
+        }])
+        // console.log(response.data);
+        break;
+      }
+    }
   }
 }

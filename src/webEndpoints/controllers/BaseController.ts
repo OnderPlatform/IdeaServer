@@ -328,6 +328,7 @@ export class BaseController {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.userMargin(body.margin, who)
+      await this.db.service.postPricesToAMIGOForCell(who)
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
@@ -607,6 +608,7 @@ export class BaseController {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.postPrices(body, who)
+      await this.db.service.postPricesToAMIGOForCell(who)
       ctx.response.status = 201
     } catch (e) {
       console.log(e);

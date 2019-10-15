@@ -306,3 +306,11 @@ export interface OnInitPriceInitPowerChanged {
   initPrice: number[],
   whenChanged: string
 }
+
+
+export interface PostDataToAMIGOProps {
+  ethAddress: string
+  cellType: "generatingUnit" | "energyStoragingUnit" | "energyConsumer",
+  value: number
+  timeStamp: string
+}

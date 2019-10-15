@@ -47,6 +47,7 @@ export const EthAddresses: string[] = [
   "0x1ABE470DdB6609Ba1f4E2e5C54115A359a8dd64a",
   "0xA3Df124E0A6A9555cb9DD35C1Ff0e1e42f70DC6A",
 ]
+
 export const initialMockData = {
   producers: [
     {
