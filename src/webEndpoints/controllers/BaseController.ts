@@ -107,7 +107,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -131,18 +131,23 @@ export class BaseController {
       }
       ctx.status = 200
     } catch (e) {
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
   async findEthAddressByEmail(email: string): Promise<string> {
-    const cell = await this.db.service.userRepository.findOneOrFail({
-      where: {
-        email: email
-      },
-      relations: ['cell']
-    })
-    return cell.cell.ethAddress
+    try {
+      const cell = await this.db.service.userRepository.findOneOrFail({
+        where: {
+          email: email
+        },
+        relations: ['cell']
+      })
+      return cell.cell.ethAddress
+    } catch (e) {
+      return 'ADMIN'
+    }
+
   }
 
   async getAdminTransactions(ctx: Router.IRouterContext) {
@@ -314,9 +319,29 @@ export class BaseController {
       }
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
       return
     }
+  }
+
+  async isAdmin(ethAddress: string) {
+    const email = this.findEthAddressByEmail(ethAddress)
+    const user = await this.db.service.userRepository.findOneOrFail({
+      where: {
+        email
+      }
+    })
+    return user.isAdmin
+  }
+
+  async helpNotForAdmin(ctx: Router.IRouterContext) {
+    ctx.response.status = 400
+    ctx.response.body = 'This endpoint not allowed for admin'
+  }
+
+  async helpThrowError(ctx: Router.IRouterContext, message: string) {
+    ctx.response.status = 500
+    ctx.response.body = message
   }
 
   async postUserMargin(ctx: Router.IRouterContext) {
@@ -326,13 +351,17 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+      if (this.isAdmin(who)) {
+        this.helpNotForAdmin(ctx)
+        return
+      }
       const body = JSON.parse(ctx.request.body as string)
       await this.db.service.userMargin(body.margin, who)
       await this.db.service.postPricesToAMIGOForCell(who)
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -381,7 +410,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -433,7 +462,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -466,7 +495,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -498,7 +527,7 @@ export class BaseController {
       ctx.response.status = 200
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -512,7 +541,7 @@ export class BaseController {
       ctx.response.status = 501
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
 
   }
@@ -523,7 +552,7 @@ export class BaseController {
       ctx.body = fs.createReadStream(fileName);
       ctx.attachment(fileName);
     } else {
-      ctx.throw(400, "file result.xlsx is not found");
+      this.helpThrowCodeAndMessage(ctx, 400, "file result.xlsx is not found")
     }
   }
 
@@ -555,7 +584,7 @@ export class BaseController {
       this.getResultXlsx(ctx)
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
 
   }
@@ -588,14 +617,14 @@ export class BaseController {
         } else {
           console.log('null!');
           const errorMessage = 'initPower or initPrice is null on server'
-          ctx.throw(500, errorMessage)
+          this.helpThrowCodeAndMessage(ctx, 500, errorMessage)
         }
       } else {
         ctx.response.body = 'this request allowed only for producer, you are ' + cell.type
         ctx.response.status = 400
       }
     } catch (e) {
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -612,26 +641,22 @@ export class BaseController {
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
 
   }
 
+  async helpThrowCodeAndMessage(ctx: Router.IRouterContext, code: number, message: string) {
+    ctx.response.status = code
+    ctx.response.body = message
+  }
+
   async login(ctx: Router.IRouterContext) {
-    try {
-      // const body = JSON.parse( as string)
-      console.log(ctx.request.body.email);
-    } catch (e) {
-      console.log(e);
-      ctx.throw(500, e.message)
-      return
-    }
     //Check if email and password are set
     let email = ctx.request.body.email
     let password = ctx.request.body.password
     if (!(email && password)) {
-      ctx.response.status = 400
-      ctx.response.body = `You have to provide email and password together in body`
+      this.helpThrowCodeAndMessage(ctx, 400, `You have to provide email and password together in body`)
     }
 
     //Get user from database
@@ -641,8 +666,7 @@ export class BaseController {
     try {
       user = await userRepository.findOneOrFail({where: {email}});
     } catch (error) {
-      ctx.response.status = 400
-      ctx.response.body = 'There is no such user'
+      this.helpThrowCodeAndMessage(ctx, 400, 'There is no such user')
       return
     }
     var token = ""
@@ -841,7 +865,7 @@ export class BaseController {
       }
     } catch (e) {
       console.log(e);
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
   }
 
@@ -861,7 +885,7 @@ export class BaseController {
       }
       ctx.response.status = 200
     } catch (e) {
-      ctx.throw(500, e.message)
+      this.helpThrowError(ctx, e.message)
     }
 
   }
