@@ -3,7 +3,7 @@ export function mapCellTypeToPurposeKey(type: "generatingUnit" | "energyStoragin
     case "generatingUnit":
     case "energyConsumer":
     case "energyStoragingUnit":
-      return 'TMMM'
+      return 'FACT'
     default:
       throw new Error(`unknown cell type ${type}`)
   }

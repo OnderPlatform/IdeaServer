@@ -1995,7 +1995,7 @@ export class NodeDatabaseService {
     //create anchor to appropriete user with appropriete data
   }
 
-  async postPricesToAMIGOForCell(ethAddress: string, timeStamp: string = (new Date()).toISOString()) {
+  async postPricesToAMIGOForCell(ethAddress: string, purposeKey?: string, timeStamp: string = (new Date()).toISOString()) {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: ethAddress
@@ -2011,7 +2011,7 @@ export class NodeDatabaseService {
     })
 
     const cellAMIGOType = converCellTypeToAMIGOCellType(cell.type)
-    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/${mapCellTypeToEndpoint(cellAMIGOType)}?purposeKey=${mapCellTypeToPurposeKey(cellAMIGOType)}`
+    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/${mapCellTypeToEndpoint(cellAMIGOType)}?purposeKey=${purposeKey && mapCellTypeToPurposeKey(cellAMIGOType)}`
     if (typeof cell.initPrice != 'object')
       throw new Error('initPrice is not an object')
     switch (cellAMIGOType) {
