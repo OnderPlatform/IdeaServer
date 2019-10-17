@@ -136,6 +136,8 @@ export class BaseController {
   }
 
   async findEthAddressByEmail(email: string): Promise<string> {
+    if (email === 'admin@email.com')
+      return 'ADMIN'
     try {
       const cell = await this.db.service.userRepository.findOneOrFail({
         where: {
@@ -145,7 +147,7 @@ export class BaseController {
       })
       return cell.cell.ethAddress
     } catch (e) {
-      return 'ADMIN'
+      throw e
     }
 
   }
@@ -176,23 +178,6 @@ export class BaseController {
     ctx.response.body = await this.db.service.adminProductions()
     ctx.response.status = 200
   }
-
-  // async postLogin(ctx: Router.IRouterContext) {
-  //   try {
-  //     const body = JSON.parse(ctx.request.body as string)
-  //     if (body) {
-  //         if (await this.db.service.authorization(body)) {
-  //           ctx.response.status = 202
-  //         } else {
-  //           ctx.response.status = 401
-  //         }
-  //     } else {
-  //       ctx.response.status = 400
-  //     }
-  //   } catch (e) {
-  //     console.log('Error while auth. Error message: ', e);
-  //   }
-  // }
 
   async closeUserChannels(userEmail: string): Promise<any> {
     const who: string = await this.findEthAddressByEmail(userEmail)
@@ -325,10 +310,14 @@ export class BaseController {
   }
 
   async isAdmin(ethAddress: string) {
-    const email = this.findEthAddressByEmail(ethAddress)
+    const cell = await this.db.service.cellRepository.findOneOrFail({
+      where: {
+        ethAddress
+      }
+    })
     const user = await this.db.service.userRepository.findOneOrFail({
       where: {
-        email
+        cell
       }
     })
     return user.isAdmin
@@ -351,11 +340,21 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      if (this.isAdmin(who)) {
+      const cell = await this.db.service.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: who
+        }
+      })
+      if (cell.type != 'prosumer') {
+        this.helpThrowCodeAndMessage(ctx, 400, 'Method allowed only for prosumers')
+        return
+      }
+      if (await this.isAdmin(who)) {
         this.helpNotForAdmin(ctx)
         return
       }
-      const body = JSON.parse(ctx.request.body as string)
+
+      const body = ctx.request.body
       await this.db.service.userMargin(body.margin, who)
       await this.db.service.postPricesToAMIGOForCell(who)
       ctx.response.status = 201
@@ -635,7 +634,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const body = JSON.parse(ctx.request.body as string)
+      const body = ctx.request.body
       await this.db.service.postPrices(body, who)
       await this.db.service.postPricesToAMIGOForCell(who)
       ctx.response.status = 201
@@ -744,7 +743,7 @@ export class BaseController {
   };
 
   async setDateFromAnchoringTable(data: string, user: User): Promise<string> {
-    const parsed = JSON.parse(data)
+    const parsed = data
     const anchoringEntry = await this.db.service.anchorRepository.findOne({
       where: {
         user: user
