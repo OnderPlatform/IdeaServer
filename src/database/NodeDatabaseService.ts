@@ -138,6 +138,8 @@ export class NodeDatabaseService {
       } else {
         energyOut += prosumerData.value
       }
+      Math.abs(energyIn)
+      Math.abs(energyOut)
       // console.log("energyIn", energyIn)
       // console.log("energyOut", energyOut)
       // const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
@@ -169,7 +171,7 @@ export class NodeDatabaseService {
 
       const consumerPreparedData: ConsumerData = {
         time: consumerData.timeStamp,
-        energy: consumerData.value,
+        energy: Math.abs(consumerData.value),
         consumerEthAddress: consumerEntry.ethAddress
       }
 
@@ -189,7 +191,7 @@ export class NodeDatabaseService {
 
       const producerPreparedData: ProducerData = {
         power: producerPowerData.value,
-        energy: producerEnergyData.value,
+        energy: Math.abs(producerEnergyData.value),
         time: producerPowerData.timeStamp,
         producerEthAddress: producerEntry.ethAddress
       }
