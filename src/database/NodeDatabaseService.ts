@@ -1991,10 +1991,6 @@ export class NodeDatabaseService {
     }
   }
 
-  async sendDataToAnchor() {
-    //create anchor to appropriete user with appropriete data
-  }
-
   async postPricesToAMIGOForCell(ethAddress: string, purposeKey?: string, timeStamp: string = (new Date()).toISOString()) {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
