@@ -1158,7 +1158,7 @@ export class NodeDatabaseService {
 
   async adminAnchor(): Promise<AdminAnchor> {
     const anchors = await this.anchorRepository.find({
-      relations: ['user']
+      relations: ['user', 'user.cell']
     })
 
     return {
