@@ -1069,13 +1069,13 @@ export class NodeDatabaseService {
     const avgPrice = await this.tradeRepository.query('select avg(price) from trade where type = \'consumer\';')
     const entitiesToday = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval`),
+        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval and ${columnAlias} <= now()`),
         type: 'consumer'
       }
     })
     const entities30Today = await this.tradeRepository.find({
       where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '30 day'::interval`),
+        time: Raw(columnAlias => `${columnAlias} > now() - '30 day'::interval and ${columnAlias} <= now()`),
         type: 'consumer'
       }
     })
@@ -1208,14 +1208,14 @@ export class NodeDatabaseService {
       where: {
         type: 'prosumer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval and ${columnAlias} <= now()`)
       }
     })
     const userTradeTable30Day = await this.tradeRepository.find({
       where: {
         type: 'prosumer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval and ${columnAlias} <= now()`)
       }
     })
     if (typeof userTradeTable[0].energyIn != "number")
@@ -1329,14 +1329,14 @@ export class NodeDatabaseService {
       where: {
         type: 'prosumer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval and ${columnAlias} <= now()`)
       }
     })
     const userTradeTable30Day = await this.tradeRepository.find({
       where: {
         type: 'prosumer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval and ${columnAlias} <= now()`)
       }
     })
 
@@ -1455,14 +1455,14 @@ export class NodeDatabaseService {
       where: {
         type: 'consumer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval and ${columnAlias} <= now()`)
       }
     })
     const userTradeTable30Day = await this.tradeRepository.find({
       where: {
         type: 'consumer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval and ${columnAlias} <= now()`)
       }
     })
 
@@ -1578,14 +1578,14 @@ export class NodeDatabaseService {
       where: {
         type: 'producer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval and ${columnAlias} <= now()`)
       }
     })
     const userTradeTable30Day = await this.tradeRepository.find({
       where: {
         type: 'producer',
         cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval`)
+        time: Raw(columnAlias => `${columnAlias} > now() - '30 day'::interval and ${columnAlias} <= now()`)
       }
     })
 
