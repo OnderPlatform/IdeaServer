@@ -1083,12 +1083,12 @@ export class NodeDatabaseService {
     })
 
     return {
-      minEnergy: minE,
-      maxEnergy: maxE,
-      averageEnergy: avgE,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      averagePrice: avgPrice,
+      minEnergy: minE[0].min,
+      maxEnergy: maxE[0].max,
+      averageEnergy: avgE[0].avg,
+      minPrice: minPrice[0].min,
+      maxPrice: maxPrice[0].max,
+      averagePrice: avgPrice[0].avg,
       energy_today: entitiesToday.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
