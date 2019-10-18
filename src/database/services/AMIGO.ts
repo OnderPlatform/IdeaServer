@@ -10,12 +10,16 @@ import {
   ProsumerData
 } from "../../mockData/interfaces";
 import { EthAddresses, initialMockData } from "../../mockData/config";
-import { converCellTypeToAMIGOCellType, mapCellTypeToEndpoint, mapCellTypeToPurposeKey } from "../../utils/mapCellTypes";
+import {
+  converCellTypeToAMIGOCellType,
+  mapCellTypeToEndpoint,
+  mapCellTypeToPurposeKey
+} from "../../utils/mapCellTypes";
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 
 const DEFAULT_OPCOEF = 3
 const DEFAULT_INITPOWER = [0, 3, 5, 7, 9]
-const DEFAULT_INITPRICE = [0,	1,	2,	3,	4]
+const DEFAULT_INITPRICE = [0, 1, 2, 3, 4]
 const DEFAULT_MARGIN = 5
 
 
@@ -232,37 +236,42 @@ export class AMIGO extends NodeDatabaseRepositories {
   async handleDataFromAMIGO(data: DataFromAMIGO) {
     console.log('Got data: ', data);
     // 1. Inserting new entries
-    await Promise.all(data.producers.map(async value => {
+    const newProducerTradeIds = await Promise.all(data.producers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
           ethAddress: value.producerEthAddress
         }
       })
-      await this.tradeRepository.insert({
+      const insertResult = await this.tradeRepository.insert({
         time: value.time,
         energy: value.energy,
         power: value.power,
         cell: cell,
         type: 'producer',
-        price: 0
+        price: 0,
+        pay: 0
       })
+      return insertResult.identifiers[0].id
     }))
-    await Promise.all(data.consumers.map(async value => {
+
+    const newConsumerTradeIds = await Promise.all(data.consumers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
           ethAddress: value.consumerEthAddress
         }
       })
 
-      await this.tradeRepository.insert({
+      const insertResult = await this.tradeRepository.insert({
         cell: cell,
         time: value.time,
         energy: value.energy,
         type: 'consumer',
         price: 0
       })
+      return insertResult.identifiers[0].id
     }))
-    await Promise.all(data.prosumers.map(async value => {
+
+    const newProsumerTradeIds = await Promise.all(data.prosumers.map(async value => {
       const cell = await this.cellRepository.findOneOrFail({
         where: {
           ethAddress: value.prosumerEthAddress
@@ -278,7 +287,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         }
       })
 
-      await this.tradeRepository.insert({
+      const insertResult = await this.tradeRepository.insert({
         cell: cell,
         time: value.time,
         energyIn: value.energyIn,
@@ -288,65 +297,27 @@ export class AMIGO extends NodeDatabaseRepositories {
         price: 0,
         pip: false
       })
-    }))
-    // 2. Pip, avPrice
-    await Promise.all(data.prosumers.map(async (value, index) => {
-      const cell = await this.cellRepository.findOneOrFail({
-        where: {
-          ethAddress: value.prosumerEthAddress
-        }
-      })
-      const lastProsumerCell = await this.tradeRepository.findOneOrFail({
-        where: {
-          cell: cell
-        },
-        order: {
-          time: "DESC"
-        }
-      })
-      const pip: boolean = false
-
-      const prosumersWithNoPip = await this.tradeRepository.find({
-        where: {
-          cell: cell,
-          pip: false
-        }
-      })
-
-      let avPrice: number = 0
-      if (prosumersWithNoPip.length)
-        avPrice = prosumersWithNoPip.reduce((previousValue, currentValue) => previousValue + currentValue.price, 0) / prosumersWithNoPip.length
-      else
-        avPrice = 0
-
-
-      await this.tradeRepository.update({
-        id: lastProsumerCell.id
-      }, {
-        pip: pip,
-        avPrice: avPrice
-      })
+      return insertResult.identifiers[0].id
     }))
 
     // 3. Price: Working with producers
-    await Promise.all(data.producers.map(async value => {
-      const cell = await this.cellRepository.findOneOrFail({
-        where: {
-          ethAddress: value.producerEthAddress
-        }
-      })
+    await Promise.all(newProducerTradeIds.map(async (value: number) => {
       const lastProducerEntry = await this.tradeRepository.findOneOrFail({
         where: {
-          cell: cell
+          id: value,
         },
-        order: {
-          time: "DESC"
-        }
+        relations: ['cell']
       })
+      const cell = lastProducerEntry.cell
+
       if (!cell.initPrice)
         throw new Error('initPrice is null')
       if (!cell.initPower)
         throw new Error('initPower is null')
+
+      const theData = data.producers.find(value1 => value1.producerEthAddress === cell.ethAddress)
+      if (!theData)
+        throw new Error('fatal error')
 
 
       // let index
@@ -357,7 +328,7 @@ export class AMIGO extends NodeDatabaseRepositories {
       //     return previousValue + (value.power < currentValue ? 1 : 0)
       //   }, 0)
       // const price = cell.initPrice[index]
-      let index = cell.initPower.reduce((previousValue, currentValue) => previousValue + (currentValue < value.power ? 1 : 0), 0)
+      let index = cell.initPower.reduce((previousValue, currentValue) => previousValue + (currentValue < theData.power ? 1 : 0), 0)
       if (index >= cell.initPower.length)
         index = cell.initPower.length - 1
       const price = cell.initPrice[index]
@@ -371,73 +342,58 @@ export class AMIGO extends NodeDatabaseRepositories {
 
     // 3. Price: Working with prosumers
     let priceForConsumer: number = 0
-    await Promise.all(data.prosumers.map(async value => {
-      // Finding prosumer cell in database
-      const cell = await this.cellRepository.findOneOrFail({
-        where: {
-          ethAddress: value.prosumerEthAddress
-        }
-      })
+    await Promise.all(newProsumerTradeIds.map(async (value: number) => {
       // Finding last entry in trade table
       const lastProsumerTrade = await this.tradeRepository.findOneOrFail({
         where: {
-          cell: cell
+          id: value
         },
-        order: {
-          time: "DESC"
-        }
+        relations: ['cell']
       })
+      // Finding prosumer cell in database
+      const cell = lastProsumerTrade.cell
 
 
       if (typeof cell.margin != 'number')
         throw new Error('margin is null')
       const margin = cell.margin
 
-      {
-        // Calculating price for consumer
-        const Trade_producer_table = await this.tradeRepository.find({
-          where: {
-            type: 'producer'
-          }
-        })
-        const Trade_prosumer_table = await this.tradeRepository.find({
-          where: {
-            type: 'prosumer'
-          }
-        })
-        const Trade_consumer_table = await this.tradeRepository.find({
-          where: {
-            type: 'consumer'
-          }
-        })
 
-        const S1 = Trade_producer_table.reduce((previousValue, currentValue) => {
-          if (typeof currentValue.energy != 'number')
-            throw new Error('producer table consists null \"energy\" field.')
-          return previousValue + currentValue.energy * currentValue.price
-        }, 0)
+      // Calculating price for consumer
+      const Trade_producer_table = await this.tradeRepository.find({
+        where: {
+          type: 'producer'
+        }
+      })
+      const Trade_prosumer_table = await this.tradeRepository.find({
+        where: {
+          type: 'prosumer'
+        }
+      })
+      const Trade_consumer_table = await this.tradeRepository.find({
+        where: {
+          type: 'consumer'
+        }
+      })
 
-        const S2 = 0
+      const S1 = Trade_producer_table.reduce((previousValue, currentValue) => {
+        if (typeof currentValue.energy != 'number')
+          throw new Error('producer table consists null \"energy\" field.')
+        return previousValue + currentValue.energy * currentValue.price
+      }, 0)
 
-        const S3 = Trade_producer_table.reduce((previousValue, currentValue) => {
-          if (typeof currentValue.energy != "number")
-            throw new Error('energy is null')
-          return previousValue + currentValue.energy
-        }, 0)
+      const S2 = 0
 
-        const S4 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-          if (typeof currentValue.pip !== "boolean")
-            throw new Error('pip is null')
-          if (typeof currentValue.energyOut != "number")
-            throw new Error('energuOut is null')
-          if (typeof currentValue.energyIn != "number")
-            throw new Error('energyIn is null')
+      const S3 = Trade_producer_table.reduce((previousValue, currentValue) => {
+        if (typeof currentValue.energy != "number")
+          throw new Error('energy is null')
+        return previousValue + currentValue.energy
+      }, 0)
 
-          return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyIn - currentValue.energyOut)
-        }, 0)
-        priceForConsumer = (S1 + S2) / (S3 + S4)
-        console.log("priceForConsumerAndProsumer: ", priceForConsumer);
-      }
+      const S4 = 0
+      priceForConsumer = (S1 + S2) / (S3 + S4)
+      console.log("priceForConsumerAndProsumer: ", priceForConsumer);
+
 
       // // calculating pay
       // let pay: number
@@ -479,21 +435,16 @@ export class AMIGO extends NodeDatabaseRepositories {
     }))
 
     // 3, 4. Price, pay: working with consumers
-    await Promise.all(data.consumers.map(async value => {
-      // Finding consumer cell
-      const cell = await this.cellRepository.findOneOrFail({
-        ethAddress: value.consumerEthAddress
-      })
-
+    await Promise.all(newConsumerTradeIds.map(async (value: number) => {
       // Finding last entry in trade table
       const lastConsumerInTradeTable = await this.tradeRepository.findOneOrFail({
         where: {
-          cell: cell
+          id: value
         },
-        order: {
-          time: "DESC"
-        }
+        relations: ['cell']
       })
+      // Finding consumer cell
+      const cell = lastConsumerInTradeTable.cell
 
       const Trade_consumer_table = await this.tradeRepository.find({
         type: 'consumer'
@@ -660,34 +611,22 @@ export class AMIGO extends NodeDatabaseRepositories {
     }
 
     // From every consumer to every prosumer
-    for (let i = 0; i < data.consumers.length; i++) {
-      for (let j = 0; j < data.prosumers.length; j++) {
-        const consumer = await this.cellRepository.findOneOrFail({
-          where: {
-            ethAddress: data.consumers[i].consumerEthAddress
-          }
-        })
+    for (const consumerId of newConsumerTradeIds) {
+      for (const prosumerId of newProsumerTradeIds) {
         const consumerTrade = await this.tradeRepository.findOneOrFail({
           where: {
-            cell: consumer
+            id: consumerId
           },
-          order: {
-            time: "DESC"
-          }
+          relations: ['cell']
         })
-        const prosumer = await this.cellRepository.findOneOrFail({
-          where: {
-            ethAddress: data.prosumers[j].prosumerEthAddress
-          }
-        })
+        const consumer = consumerTrade.cell
         const prosumerTrade = await this.tradeRepository.findOneOrFail({
           where: {
-            cell: prosumer
+            id: prosumerId
           },
-          order: {
-            time: "DESC"
-          }
+          relations: ['cell']
         })
+        const prosumer = prosumerTrade.cell
         const producers = await this.tradeRepository.find({
           where: {
             type: 'producer'
@@ -703,14 +642,7 @@ export class AMIGO extends NodeDatabaseRepositories {
             type: 'consumer'
           }
         })
-        const lastConsumerInTradeTable = await this.tradeRepository.findOneOrFail(({
-          where: {
-            type: 'consumer'
-          },
-          order: {
-            time: "DESC"
-          }
-        }))
+        const lastConsumerInTradeTable = consumerTrade
 
         const S1 = prosumers.reduce((previousValue, currentValue) => {
           if (typeof currentValue.energyIn != "number")
@@ -766,20 +698,14 @@ export class AMIGO extends NodeDatabaseRepositories {
 
 
     // 6. Creating transactions for operator
-    await Promise.all(data.consumers.map(async value => {
-      const consumer = await this.cellRepository.findOneOrFail({
-        where: {
-          ethAddress: value.consumerEthAddress
-        }
-      })
+    await Promise.all(newConsumerTradeIds.map(async (value: number) => {
       const consumerTrade = await this.tradeRepository.findOneOrFail({
         where: {
-          cell: consumer
+          id: value
         },
-        order: {
-          time: "DESC"
-        }
+        relations: ['cell']
       })
+      const consumer = consumerTrade.cell
       if (typeof consumerTrade.pay !== "number")
         throw new Error('pay is null')
       if (typeof operator.opCoef != "number")

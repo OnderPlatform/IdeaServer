@@ -43,10 +43,7 @@ export default class Application {
     this.db.service.mqtt.mqtt_cl.start()
     // console.log("post data cron")
 
-    // await this.db.service.sendNewTransactionsToMQTT()
-
-    // const data = await fetchMocks('endpoint')
-    // await this.db.service.handleDataFromAMIGO(data)
+    // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
     cron.schedule('0 */15 * * * *', () => {
       console.log("fetch data cron")
