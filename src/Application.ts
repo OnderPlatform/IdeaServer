@@ -1,17 +1,14 @@
 import WebServer from './webEndpoints/WebServer'
-import NodeDatabase from './database/NodeDatabase'
-import * as mqtt_cl from './mqtt/Mqtt_client'
+import NodeDatabase from './database/services/NodeDatabase'
 import * as cron from 'node-cron'
-import fetchMocks from './mockData/fetchMockDataFromAMIGO'
 import config from "./config/config"
 
 export default class Application {
   private readonly web: WebServer
   private readonly db: NodeDatabase
-  private readonly mqtt: mqtt_cl.ClientMQTT
+
 
   constructor() {
-    this.mqtt = new mqtt_cl.ClientMQTT()
     this.db = new NodeDatabase({
       'type': 'postgres',
       'host': config.hostDB,
@@ -24,35 +21,27 @@ export default class Application {
       'entities': [
         'dist/database/models/**/*.js'
       ]
-    }, this.mqtt)
+    })
     this.web = new WebServer(config.serverPort, config.serverUrl, this.db)
   }
 
   fetchingData = async () => {
-    await this.db.service.fetchAndHandleDataFromAMIGO()
-    await this.db.service.sendPricesToAmigo()
+    await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
+    await this.db.service.amigo.sendPricesToAmigo()
     // await this.db.service.sendNewTransactionsToMQTT()
   }
 
   postData = async () => {
-    await this.db.service.makePostRequest()
+    await this.db.service.notarization.makePostRequest()
   }
 
   async start(): Promise<void> {
     await this.web.start()
     await this.db.initConnection()
     // await this.db.service.initMockData()
-    const tmp = await this.db.service.cellRepository.find()
-    if (!tmp.length) {
-      await this.db.service.fetchInitialDataFromAMIGO()
-      await this.db.service.initialDataForOperator()
-      // await this.db.service.initMockData()
-    }
-    this.mqtt.add_handler((value: string, message: string) => this.db.service.newTransactionStateFromMQTT(value, message))
-    this.mqtt.start()
+    this.db.service.mqtt.mqtt_cl.add_handler((value: string, message: string) => this.db.service.mqtt.newTransactionStateFromMQTT(value, message))
+    this.db.service.mqtt.mqtt_cl.start()
     // console.log("post data cron")
-    // this.postData()
-    //this.fetchingData()
 
     // await this.db.service.sendNewTransactionsToMQTT()
 

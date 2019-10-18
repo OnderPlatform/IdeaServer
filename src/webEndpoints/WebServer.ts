@@ -1,7 +1,7 @@
 import * as Koa from 'koa'
 import * as http from 'http'
 import { BaseController } from './controllers/BaseController'
-import NodeDatabase from "../database/NodeDatabase";
+import NodeDatabase from "../database/services/NodeDatabase";
 import bodyParser = require('koa-bodyparser');
 import koaLogger = require('koa-logger');
 const cors = require('@koa/cors');

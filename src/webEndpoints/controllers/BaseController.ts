@@ -1,7 +1,7 @@
 import * as Router from 'koa-router'
 import * as fs from 'fs';
 import * as koaBody from 'koa-body'
-import NodeDatabase from "../../database/NodeDatabase";
+import NodeDatabase from "../../database/services/NodeDatabase";
 import * as jwt from "jsonwebtoken";
 import { getRepository } from "typeorm";
 import { User } from "../../database/models";
@@ -67,7 +67,7 @@ export class BaseController {
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
       this.excel.parse()
-      this.db.mqtt.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5, 7)
+      this.db.service.mqtt.mqtt_cl.publishProgress(1, 1, 200, "Enode1", "Enode2", 12.5, 7)
     })
 
     router.get('/download', async function (ctx) {
@@ -94,7 +94,7 @@ export class BaseController {
     }
     try {
       const ethId: string = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         },
@@ -119,7 +119,7 @@ export class BaseController {
     try {
       const params = new URLSearchParams(ctx.request.querystring)
       const ethId = params.get('ethId')
-      const cell = await this.db.service.cellRepository.findOneOrFail({
+      const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
         where: {
           ethAddress: ethId
         }
@@ -139,7 +139,7 @@ export class BaseController {
     if (email === 'admin@email.com')
       return 'ADMIN'
     try {
-      const cell = await this.db.service.userRepository.findOneOrFail({
+      const cell = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: email
         },
@@ -157,7 +157,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    ctx.response.body = await this.db.service.adminTransactions()
+    ctx.response.body = await this.db.service.reidsUI.adminTransactions()
     ctx.response.status = 200
   }
 
@@ -166,7 +166,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    ctx.response.body = await this.db.service.adminConsumptions()
+    ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
     ctx.response.status = 200
   }
 
@@ -175,7 +175,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    ctx.response.body = await this.db.service.adminProductions()
+    ctx.response.body = await this.db.service.reidsUI.adminProductions()
     ctx.response.status = 200
   }
 
@@ -200,7 +200,7 @@ export class BaseController {
   }
 
   async closeAllUsersChannels(): Promise<any> {
-    const users = await this.db.service.userRepository.find({})
+    const users = await this.db.service.repositories.userRepository.find({})
     return Promise.all(users.map(async value => {
       try {
         const result = await this.closeUserChannels(value.email)
@@ -227,7 +227,7 @@ export class BaseController {
     }
     try {
       const who: string = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
@@ -270,7 +270,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    ctx.response.body = await this.db.service.adminAnchor()
+    ctx.response.body = await this.db.service.reidsUI.adminAnchor()
     ctx.response.status = 200
   }
 
@@ -281,7 +281,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const cell = await this.db.service.cellRepository.findOneOrFail({
+      const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
         where: {
           ethAddress: who
         }
@@ -310,12 +310,12 @@ export class BaseController {
   }
 
   async isAdmin(ethAddress: string) {
-    const cell = await this.db.service.cellRepository.findOneOrFail({
+    const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
       where: {
         ethAddress
       }
     })
-    const user = await this.db.service.userRepository.findOneOrFail({
+    const user = await this.db.service.repositories.userRepository.findOneOrFail({
       where: {
         cell
       }
@@ -340,7 +340,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const cell = await this.db.service.cellRepository.findOneOrFail({
+      const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
         where: {
           ethAddress: who
         }
@@ -349,14 +349,15 @@ export class BaseController {
         this.helpThrowCodeAndMessage(ctx, 400, 'Method allowed only for prosumers')
         return
       }
-      if (await this.isAdmin(who)) {
+      const isAdmin = await this.isAdmin(who)
+      if (isAdmin) {
         this.helpNotForAdmin(ctx)
         return
       }
 
       const body = ctx.request.body
-      await this.db.service.userMargin(body.margin, who)
-      await this.db.service.postPricesToAMIGOForCell(who, 'TMMM')
+      await this.db.service.reidsUI.userMargin(body.margin, who)
+      await this.db.service.amigo.postPricesToAMIGOForCell(who, 'TMMM')
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
@@ -370,7 +371,7 @@ export class BaseController {
       return
     }
     try {
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
@@ -381,32 +382,34 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.userConsumption(discoveringuser)
+          ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser)
         } else {
-          ctx.response.body = await this.db.service.adminConsumptions()
+          ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-        const cell = await this.db.service.cellRepository.findOneOrFail({
+        const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
           where: {
             ethAddress: who
           }
         })
         switch (cell.type) {
           case "consumer": {
-            ctx.response.body = await this.db.service.userConsumption(who)
+            ctx.response.body = await this.db.service.reidsUI.userConsumption(who)
+            ctx.response.status = 200
             break;
           }
           case "prosumer": {
-            ctx.response.body = await this.db.service.userProsumerConsumption(who)
+            ctx.response.body = await this.db.service.reidsUI.userProsumerConsumption(who)
+            ctx.response.status = 200
             break;
           }
           default: {
-            ctx.response.body = "user\'s cell type and requested type of data doesn\'t match"
+            this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
+            break;
           }
         }
       }
-      ctx.response.status = 200
     } catch (e) {
       console.log(e);
       this.helpThrowError(ctx, e.message)
@@ -419,7 +422,7 @@ export class BaseController {
       return
     }
     try {
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
@@ -430,35 +433,34 @@ export class BaseController {
         const discoveringuser = params.get('ethId')
         console.log("discoveringuser: ", discoveringuser)
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.userProduction(discoveringuser)
+          ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser)
         } else {
-          ctx.response.body = await this.db.service.adminProductions()
+          ctx.response.body = await this.db.service.reidsUI.adminProductions()
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-        const cell = await this.db.service.cellRepository.findOneOrFail({
+        const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
           where: {
             ethAddress: who
           }
         })
         switch (cell.type) {
           case "producer": {
-            ctx.response.body = await this.db.service.userProduction(who)
+            ctx.response.body = await this.db.service.reidsUI.userProduction(who)
+            ctx.response.status = 200
             break
           }
           case "prosumer": {
-            ctx.response.body = await this.db.service.userProsumerProduction(who)
+            ctx.response.body = await this.db.service.reidsUI.userProsumerProduction(who)
+            ctx.response.status = 200
             break
           }
           default: {
-            ctx.response.body = "user\'s cell type and requested type of data doesn\'t match"
+            this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
             break
           }
         }
       }
-
-
-      ctx.response.status = 200
     } catch (e) {
       console.log(e);
       this.helpThrowError(ctx, e.message)
@@ -472,7 +474,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
@@ -482,12 +484,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.userTransactions(discoveringuser)
+          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser)
         } else {
-          ctx.response.body = await this.db.service.adminTransactions()
+          ctx.response.body = await this.db.service.reidsUI.adminTransactions()
         }
       } else {
-        ctx.response.body = await this.db.service.userTransactions(who)
+        ctx.response.body = await this.db.service.reidsUI.userTransactions(who)
       }
 
 
@@ -505,7 +507,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
@@ -515,12 +517,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.userAnchor(discoveringuser)
+          ctx.response.body = await this.db.service.reidsUI.userAnchor(discoveringuser)
         } else {
-          ctx.response.body = await this.db.service.adminAnchor()
+          ctx.response.body = await this.db.service.reidsUI.adminAnchor()
         }
       } else {
-        ctx.response.body = await this.db.service.userAnchor(who)
+        ctx.response.body = await this.db.service.reidsUI.userAnchor(who)
       }
 
       ctx.response.status = 200
@@ -562,7 +564,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
@@ -572,12 +574,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          this.excel.parseTransactionsToExcel(await this.db.service.userTransactions(discoveringuser))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser))
         } else {
-          this.excel.parseTransactionsToExcel(await this.db.service.adminTransactions())
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions())
         }
       } else {
-        this.excel.parseTransactionsToExcel(await this.db.service.userTransactions(who))
+        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who))
       }
       ctx.response.status = 200
       this.getResultXlsx(ctx)
@@ -595,7 +597,7 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const cell = await this.db.service.cellRepository.findOneOrFail({
+      const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
         where: {
           ethAddress: who
         }
@@ -635,8 +637,8 @@ export class BaseController {
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const body = ctx.request.body
-      await this.db.service.postPrices(body, who)
-      await this.db.service.postPricesToAMIGOForCell(who, 'TMMM')
+      await this.db.service.reidsUI.postPrices(body, who)
+      await this.db.service.amigo.postPricesToAMIGOForCell(who, 'TMMM')
       ctx.response.status = 201
     } catch (e) {
       console.log(e);
@@ -710,7 +712,7 @@ export class BaseController {
       ctx.response.status = 400
     }
 
-    const cell = await this.db.service.cellRepository.findOneOrFail({
+    const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
       where: {
         ethAddress: ethAddress
       }
@@ -726,7 +728,7 @@ export class BaseController {
 
     //Try to save. If fails, the email is already in use
     try {
-      await this.db.service.userRepository.save({
+      await this.db.service.repositories.userRepository.save({
         isAdmin: isAdmin,
         email: email,
         cell: cell,
@@ -744,7 +746,7 @@ export class BaseController {
 
   async setDateFromAnchoringTable(data: string, user: User): Promise<string> {
     const parsed = data
-    const anchoringEntry = await this.db.service.anchorRepository.findOne({
+    const anchoringEntry = await this.db.service.repositories.anchorRepository.findOne({
       where: {
         user: user
       },
@@ -766,31 +768,38 @@ export class BaseController {
     }
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
-      const user = await this.db.service.userRepository.findOneOrFail({
+      const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
       })
       const isAdmin = user.isAdmin
       if (isAdmin) {
-        const users = await this.db.service.userRepository.find({})
-        ctx.response.body = await Promise.all(users.map(async currentUser => {
-          const infoToCheck = await this.db.service.getAnchoringDataForUser(currentUser)
-          const oldDate = (await this.db.service.anchorRepository.findOneOrFail({
+        const users = await this.db.service.repositories.userRepository.find({relations: ['cell']})
+        ctx.response.body = await Promise.all(users.filter(value => !value.isAdmin && value.cell.type != 'operator').map(async currentUser => {
+          const infoToCheck = await this.db.service.notarization.getAnchoringDataForUser(currentUser)
+          const anchorEntry = await this.db.service.repositories.anchorRepository.findOne({
             where: {
               user: currentUser
             },
             order: {
               time: "DESC"
             }
-          })).lastCheckingDate
+          })
+          const oldDate = anchorEntry && anchorEntry.lastCheckingDate
+          if (!oldDate)
+            return {
+              who: currentUser.email,
+              success: null,
+              lastChecked: null
+            }
           return await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, currentUser), {
             headers: {
               'Content-Type': 'application/json',
             }
           }).then(async notarizationServerResponse => {
             if (notarizationServerResponse.status === 200) {
-              const lastEntry = await this.db.service.anchorRepository.findOneOrFail({
+              const lastEntry = await this.db.service.repositories.anchorRepository.findOneOrFail({
                 where: {
                   user: currentUser
                 },
@@ -798,7 +807,7 @@ export class BaseController {
                   time: "DESC"
                 }
               })
-              await this.db.service.anchorRepository.update({
+              await this.db.service.repositories.anchorRepository.update({
                 id: lastEntry.id
               }, {
                 lastCheckingDate: (new Date()).toISOString()
@@ -813,15 +822,15 @@ export class BaseController {
             .catch(reason => {
               return {
                 who: currentUser.email,
-                success: reason.response.status !== 404,
+                success: reason.response && reason.response.status !== 404,
                 lastChecked: oldDate
               }
             })
         }))
         ctx.response.status = 200
       } else {
-        const infoToCheck = await this.db.service.getAnchoringDataForUser(user)
-        const oldDate = (await this.db.service.anchorRepository.findOneOrFail({
+        const infoToCheck = await this.db.service.notarization.getAnchoringDataForUser(user)
+        const oldDate = (await this.db.service.repositories.anchorRepository.findOneOrFail({
           where: {
             user: user
           },
@@ -835,7 +844,7 @@ export class BaseController {
           }
         }).then(async notarizationServerResponse => {
           if (notarizationServerResponse.status === 200) {
-            const lastEntry = await this.db.service.anchorRepository.findOneOrFail({
+            const lastEntry = await this.db.service.repositories.anchorRepository.findOneOrFail({
               where: {
                 user: user
               },
@@ -843,7 +852,7 @@ export class BaseController {
                 time: "DESC"
               }
             })
-            await this.db.service.anchorRepository.update({
+            await this.db.service.repositories.anchorRepository.update({
               id: lastEntry.id
             }, {
               lastCheckingDate: (new Date()).toISOString()
@@ -873,7 +882,7 @@ export class BaseController {
     check(ctx)
     status = ctx.status !== 401;
     try {
-      const lastCheckData = await this.db.service.userRepository.findOneOrFail({
+      const lastCheckData = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
           email: <string>ctx.request.headers['from']
         }
