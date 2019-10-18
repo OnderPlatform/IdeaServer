@@ -31,7 +31,6 @@ import { AMIGO_SERVER } from "../webEndpoints/endpoints/amigoConfig";
 import axios from 'axios'
 import { User } from "./models";
 import { converCellTypeToAMIGOCellType, mapCellTypeToEndpoint, mapCellTypeToPurposeKey } from "../utils/mapCellTypes";
-import { NotEquals } from "class-validator";
 
 const DEFAULT_BALANCE = -1
 const DEFAULT_MARGIN = 5
@@ -1063,22 +1062,112 @@ export class NodeDatabaseService {
       },
       relations: ['cell']
     })
-    const minE = await this.tradeRepository.query('select min(energy) from trade where type = \'consumer\';')
-    const maxE = await this.tradeRepository.query('select max(energy) from trade where type = \'consumer\';')
-    const avgE = await this.tradeRepository.query('select avg(energy) from trade where type = \'consumer\';')
-    const minPrice = await this.tradeRepository.query('select min(price) from trade where type = \'consumer\';')
-    const maxPrice = await this.tradeRepository.query('select max(price) from trade where type = \'consumer\';')
-    const avgPrice = await this.tradeRepository.query('select avg(price) from trade where type = \'consumer\';')
+    const queryResult = await this.tradeRepository.query(`select
+       min(energy) as "minEnergy",
+       max(energy) as "maxEnergy",
+       avg(energy) as "averageEnergy",
+       min(price) as "minPrice",
+       max(price) as "maxPrice",
+       avg(price) as "averagePrice" from (select energy, price
+from trade
+where type='consumer'
+union all
+select "energyIn", price
+from trade
+where type='prosumer') as t1;`)
+
+    const entitiesToday: {energy: number, time: string, price: number}[] = await this.tradeRepository.query(`select energy, time, price
+from (select energy, time, price
+from trade
+where type='consumer'
+union all
+select "energyIn", time, price
+from trade
+where type='prosumer') as t1
+where time > now() - '1 day'::interval and time <= now();`)
+
+    const entities30Today: {energy: number, time: string, price: number}[] = await this.tradeRepository.query(`select energy, time, price
+from (select energy, time, price
+from trade
+where type='consumer'
+union all
+select "energyIn", time, price
+from trade
+where type='prosumer') as t1
+where time > now() - '30 day'::interval and time <= now();`)
+
+    return {
+      ...queryResult[0],
+      energy_today: entitiesToday.map(value => {
+        if (typeof value.energy != "number")
+          throw new Error('energy is null')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      energy_30_day: entities30Today.map(value => {
+        if (typeof value.energy != "number")
+          throw new Error('energy is null')
+        return {
+          date: value.time,
+          energy: value.energy
+        }
+      }),
+      price_today: entitiesToday.map(value => {
+        if (typeof value.price != "number")
+          throw new Error('price is null')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      price_30_day: entities30Today.map(value => {
+        if (typeof value.price != "number")
+          throw new Error('price is null')
+        return {
+          date: value.time,
+          price: value.price
+        }
+      }),
+      consumption_peers: tradeTableConsumers.map(value => {
+        if (typeof value.energy != "number")
+          throw new Error('null energy')
+        return {
+          total: value.cell.name,
+          id: value.cell.ethAddress,
+          balance: value.cell.balance || DEFAULT_BALANCE,
+          bought: value.energy,
+          price: value.price
+        }
+      })
+    }
+  }
+
+  async adminProductions(): Promise<AdminProductions> {
+    const producers = await this.tradeRepository.find({
+      where: {
+        type: 'producer'
+      },
+      relations: ['cell']
+    })
+
+    const minE = await this.tradeRepository.query('select min(energy) from trade where type = \'producer\';')
+    const maxE = await this.tradeRepository.query('select max(energy) from trade where type = \'producer\';')
+    const avgE = await this.tradeRepository.query('select avg(energy) from trade where type = \'producer\';')
+    const minPrice = await this.tradeRepository.query('select min(price) from trade where type = \'producer\';')
+    const maxPrice = await this.tradeRepository.query('select max(price) from trade where type = \'producer\';')
+    const avgPrice = await this.tradeRepository.query('select avg(price) from trade where type = \'producer\';')
     const entitiesToday = await this.tradeRepository.find({
       where: {
         time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval and ${columnAlias} <= now()`),
-        type: 'consumer'
+        type: 'producer'
       }
     })
     const entities30Today = await this.tradeRepository.find({
       where: {
         time: Raw(columnAlias => `${columnAlias} > now() - '30 day'::interval and ${columnAlias} <= now()`),
-        type: 'consumer'
+        type: 'producer'
       }
     })
 
@@ -1113,7 +1202,7 @@ export class NodeDatabaseService {
           price: value.price
         }
       }),
-      price_30_day: entitiesToday.map(value => {
+      price_30_day: entities30Today.map(value => {
         if (typeof value.price != "number")
           throw new Error('price is null')
         return {
@@ -1121,29 +1210,6 @@ export class NodeDatabaseService {
           price: value.price
         }
       }),
-      consumption_peers: tradeTableConsumers.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
-        return {
-          total: value.cell.name,
-          id: value.cell.ethAddress,
-          balance: value.cell.balance || DEFAULT_BALANCE,
-          bought: value.energy,
-          price: value.price
-        }
-      })
-    }
-  }
-
-  async adminProductions(): Promise<AdminProductions> {
-    const producers = await this.tradeRepository.find({
-      where: {
-        type: 'producer'
-      },
-      relations: ['cell']
-    })
-
-    return {
       production_peers: producers.map(value => {
         if (typeof value.energy != "number")
           throw new Error('null energy')

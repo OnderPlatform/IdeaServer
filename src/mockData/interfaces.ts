@@ -176,6 +176,28 @@ export interface AdminConsumptions {
 }
 
 export interface AdminProductions {
+  "minEnergy": number,
+  "maxEnergy": number,
+  "averageEnergy": number,
+  "minPrice": number,
+  "maxPrice": number,
+  "averagePrice": number,
+  "energy_today": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "energy_30_day": Array<{
+    "date": string,
+    "energy": number
+  }>
+  "price_today": Array<{
+    "date": string,
+    "price": number
+  }>
+  "price_30_day": Array<{
+    "date": string,
+    "price": number
+  }>
   "production_peers": Array<{
     "total": string,
     "id": string,
