@@ -20,7 +20,7 @@ export function mapCellTypeToEndpoint(type: "generatingUnit" | "energyStoragingU
   }
 }
 
-export function converCellTypeToAMIGOCellType(type: "producer" | "consumer" | "prosumer" | "operator") {
+export function converCellTypeToAMIGOCellType(type: "producer" | "consumer" | "prosumer" | "operator"| "admin") {
   switch (type) {
     case "prosumer":
       return "energyStoragingUnit"

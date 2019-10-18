@@ -9,7 +9,7 @@ export class Cell extends BaseEntity {
   ethAddress!: string
 
   @Column()
-  type!: "producer" | "consumer" | "prosumer" | "operator"
+  type!: "producer" | "consumer" | "prosumer" | "operator" | 'admin'
 
   @Column()
   name!: string

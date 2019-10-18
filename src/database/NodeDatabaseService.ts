@@ -1960,21 +1960,24 @@ where time > now() - '30 day'::interval and time <= now();`)
   }
 
   async addAnchoringDataToServer(anchoringData: string, user: User) {
-    console.log('Notarizing this one: ', JSON.stringify(anchoringData))
-    const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData, {
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-    console.log('Response from anchor service: ', response.data)
     try {
-      await this.anchorRepository.insert({
-        address: response.data.txHash,
-        hashId: response.data.dataHash,
-        time: +JSON.parse(anchoringData).date,
-        user: user,
-        lastCheckingDate: (new Date()).toISOString()
+      if (JSON.parse(anchoringData).entries.length <= 0) {
+        return
+      }
+      console.log('Notarizing this one: ', anchoringData)
+      const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
       })
+      console.log('Response from anchor service: ', response.data)
+        await this.anchorRepository.insert({
+          address: response.data.txHash,
+          hashId: response.data.dataHash,
+          time: +JSON.parse(anchoringData).date,
+          user: user,
+          lastCheckingDate: (new Date()).toISOString()
+        })
     } catch (e) {
       console.log(e);
     }
@@ -2055,7 +2058,9 @@ where time > now() - '30 day'::interval and time <= now();`)
     })
     console.log(users.length)
     for (const user of users) {
-      await this.addAnchoringDataToServer(await this.getAnchoringDataForUser(user), user)
+      if (user.cell.type != 'operator' && user.cell.type != 'admin') {
+        await this.addAnchoringDataToServer(await this.getAnchoringDataForUser(user), user)
+      }
     }
   }
 
