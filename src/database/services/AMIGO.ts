@@ -285,7 +285,8 @@ export class AMIGO extends NodeDatabaseRepositories {
         energyOut: value.energyOut,
         type: 'prosumer',
         energyInAll: (tmp ? (tmp.energyInAll ? tmp.energyInAll : 0) : 0) + value.energyIn,
-        price: 0
+        price: 0,
+        pip: false
       })
     }))
     // 2. Pip, avPrice
@@ -416,19 +417,7 @@ export class AMIGO extends NodeDatabaseRepositories {
           return previousValue + currentValue.energy * currentValue.price
         }, 0)
 
-        const S2 = Trade_prosumer_table.reduce((previousValue, currentValue) => {
-          if (typeof cell.margin != "number")
-            throw new Error('margin is null')
-          if (typeof currentValue.pip !== 'boolean')
-            throw new Error('prosumer table contains null \"pip\" field.')
-          if (typeof currentValue.energyOut != "number")
-            throw new Error('energyOut is null')
-          if (typeof currentValue.energyIn != "number")
-            throw new Error('energyIn in null')
-          if (typeof currentValue.avPrice !== "number")
-            throw new Error('avPrice is null')
-          return previousValue + (currentValue.pip ? 1 : 0) * Math.abs(currentValue.energyOut - currentValue.energyIn) * currentValue.avPrice * (1 + cell.margin / 100)
-        }, 0)
+        const S2 = 0
 
         const S3 = Trade_producer_table.reduce((previousValue, currentValue) => {
           if (typeof currentValue.energy != "number")
