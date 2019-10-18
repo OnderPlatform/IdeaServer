@@ -18,7 +18,7 @@ private started: number
   constructor() {
   //   this.options = {
   //   port: 80,
-  //   host: "mqtt-stage.rnd.rtsoft.ru",
+  //   host: "mqtt_cl-stage.rnd.rtsoft.ru",
   //   clientId: makeid(20),
   //   username: "user1",
   //   password: "jejcoilld7493",
@@ -36,9 +36,9 @@ private started: number
     // keepalive: 60,
     // reconnectPeriod: 1000,
     // rejectUnauthorized: false,
-    // protocol: 'mqtt'
+    // protocol: 'mqtt_cl'
     port: 8883,
-    host: "mqtt-stage.rnd.rtsoft.ru",
+    host: "mqtt_cl-stage.rnd.rtsoft.ru",
     clientId: makeid(20),
     username: "user1",
     password: "jejcoilld7493",

@@ -1,21 +1,19 @@
 import { Connection, ConnectionOptions, createConnection } from 'typeorm'
-import { NodeDatabaseService } from './NodeDatabaseService'
-import * as mqll_cl from '../mqtt/Mqtt_client'
+import { NodeDatabaseServiceRoot } from './NodeDatabaseServiceRoot'
+import * as mqll_cl from '../../mqtt/Mqtt_client'
 
 export default class NodeDatabase {
-  public service!: NodeDatabaseService
-  public readonly mqtt: mqll_cl.ClientMQTT
+  public service!: NodeDatabaseServiceRoot
   private readonly options: ConnectionOptions
   private connection!: Connection
 
-  constructor(options: ConnectionOptions, mqtt: mqll_cl.ClientMQTT) {
+  constructor(options: ConnectionOptions) {
     this.options = options
-    this.mqtt = mqtt
   }
 
   async initConnection(): Promise<void> {
     await this.getConnection()
-    this.service = new NodeDatabaseService(this)
+    this.service = new NodeDatabaseServiceRoot()
   }
 
   async getConnection(): Promise<Connection> {
