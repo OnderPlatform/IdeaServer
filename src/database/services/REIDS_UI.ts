@@ -398,7 +398,7 @@ where time > now() - '30 day'::interval and time <= now();`)
     }
   }
 
-  async userProsumerProduction(cellEthAddress: string): Promise<UserProduction | {}> {
+  async  userProsumerProduction(cellEthAddress: string, period?: string): Promise<UserProduction | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -507,19 +507,22 @@ where time > now() - '30 day'::interval and time <= now();`)
           price: value.price
         }
       }),
-      production_peers: userTradeTable.map(value => {
-        if (typeof value.energyOut != "number")
-          throw new Error('null energy')
-        return {
-          total: value.cell.name,
-          id: value.cell.ethAddress,
-          balance: value.cell.balance || DEFAULT_BALANCE,
-          sold: value.energyOut,
-          price: value.price
-        }
-      })
+      // production_peers: userTradeTable.map(value => {
+      //   if (typeof value.energyOut != "number")
+      //     throw new Error('null energy')
+      //   return {
+      //     total: value.cell.name,
+      //     id: value.cell.ethAddress,
+      //     balance: value.cell.balance || DEFAULT_BALANCE,
+      //     sold: value.energyOut,
+      //     price: value.price
+      //   }
+      // })
+      production_peers: (period ? (period === '1 day' ? await this.getProductionPeersToday(userCell) : await this.getProductionPeers30Day(userCell)) : await this.getProductionPeersAllTime(userCell))
     }
   }
+
+
 
   async getUserTransactionsToday(cell: Cell): Promise<Transaction[]> {
     const transactionsFrom = await this.transactionRepository.find({
