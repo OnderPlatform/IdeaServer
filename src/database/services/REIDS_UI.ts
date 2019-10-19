@@ -46,7 +46,7 @@ export class REIDS_UI extends NodeDatabaseRepositories {
     return await this.transactionRepository.query(`with t1 as (
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
-             join cell c on transaction."toId" = c.id
+             join cell c on transaction."fromId" = c.id
       and time < now()
     group by c.name, c."ethAddress"
     order by c.name)
@@ -65,11 +65,11 @@ from t1
     return await this.transactionRepository.query(`with t1 as (
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
-             join cell c on transaction."fromId" = c.id
+             join cell c on transaction."toId" = c.id
       and time < now()
     group by c.name, c."ethAddress"
     order by c.name)
-select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
 from t1
          join cell on t1.total = cell.name;`)
   }
