@@ -12,6 +12,7 @@ import {
 } from "../../mockData/interfaces";
 import { Raw } from "typeorm";
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
+import { Cell, Transaction } from "../models";
 
 const DEFAULT_BALANCE = -1
 
@@ -479,12 +480,112 @@ where time > now() - '30 day'::interval and time <= now();`)
     }
   }
 
-  async userConsumption(cellEthAddress: string): Promise<UserConsumption | {}> {
+  async getUserTransactionsToday(cell: Cell): Promise<Transaction[]> {
+    const transactionsFrom = await this.transactionRepository.find({
+      where: {
+        from: cell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval and ${columnAlias} <= now()`)
+      }
+    })
+    const transactionsTo = await this.transactionRepository.find({
+      where: {
+        to: cell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval and ${columnAlias} <= now()`)
+      }
+    })
+
+    return transactionsTo.concat(transactionsFrom)
+  }
+
+  async getUserTransactions30Day(cell: Cell): Promise<Transaction[]> {
+    const transactionsFrom = await this.transactionRepository.find({
+      where: {
+        from: cell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval and ${columnAlias} <= now()`)
+      }
+    })
+    const transactionsTo = await this.transactionRepository.find({
+      where: {
+        to: cell,
+        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval and ${columnAlias} <= now()`)
+      }
+    })
+
+    return transactionsTo.concat(transactionsFrom)
+  }
+
+  async getUserTransactions(cell: Cell): Promise<Transaction[]> {
+    const transactionsFrom = await this.transactionRepository.find({
+      where: {
+        from: cell
+      }
+    })
+    const transactionsTo = await this.transactionRepository.find({
+      where: {
+        to: cell
+      }
+    })
+
+    return transactionsFrom.concat(transactionsTo)
+  }
+
+  async getConsumptionPeersForToday(cell: Cell): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now() - '1 day'::interval < time
+group by c.name, c."ethAddress"
+order by c.name)
+    select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
+  }
+
+  async getConsumptionPeersFor30Day(cell: Cell): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now() - '30 day'::interval < time
+group by c.name, c."ethAddress"
+order by c.name)
+    select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
+  }
+
+  async getConsumptionPeersForAllTime(cell: Cell): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."toId" = c.id
+    where ("fromId" = 2 or "toId" = 2)
+      and time < now()
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+
+  async userConsumption(cellEthAddress: string, period?: string): Promise<UserConsumption | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
       }
     })
+    if (userCell.type != 'consumer') {
+      throw new Error('not a consumer')
+    }
 
     const userTradeTable = await this.tradeRepository.find({
       where: {
@@ -493,11 +594,6 @@ where time > now() - '30 day'::interval and time <= now();`)
       },
       relations: ['cell']
     })
-
-
-    if (!userTradeTable.length) {
-      return {}
-    }
 
     const userTradeTable1Day = await this.tradeRepository.find({
       where: {
@@ -551,7 +647,6 @@ where time > now() - '30 day'::interval and time <= now();`)
       return currentValue.price + previousValue
     }, 0) / userTradeTable.length
 
-
     return {
       minEnergy: minE,
       maxEnergy: maxE,
@@ -591,17 +686,19 @@ where time > now() - '30 day'::interval and time <= now();`)
           price: value.price
         }
       }),
-      consumption_peers: userTradeTable.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
-        return {
-          total: value.cell.name,
-          id: value.cell.ethAddress,
-          balance: value.cell.balance || DEFAULT_BALANCE,
-          bought: value.energy,
-          price: value.price
-        }
-      })
+      // consumption_peers: userTradeTable.map(value => {
+      //   if (typeof value.energy != "number")
+      //     throw new Error('null energy')
+      //   return {
+      //     total: value.cell.name,
+      //     id: value.cell.ethAddress,
+      //     balance: value.cell.balance || DEFAULT_BALANCE,
+      //     bought: value.energy,
+      //     price: value.price
+      //   }
+      // })
+      consumption_peers: (period ? (period === '1 day' ? await this.getConsumptionPeersForToday(userCell) : await this.getConsumptionPeersFor30Day(userCell)) : await this.getConsumptionPeersForAllTime(userCell))
+
     }
   }
 
