@@ -54,6 +54,42 @@ select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
 from t1
          join cell on t1.total = cell.name;`)
   }
+  async getAdminConsumptionPeersToday(): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."fromId" = c.id
+      and time < now() and now() - '1 day'::interval < time
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+  async getAdminConsumptionPeers30Day(): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."fromId" = c.id
+      and time < now() and now() - '30 day'::interval < time
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
 
   async getAdminProductionPeers(): Promise<Array<{
     "total": string,
@@ -67,6 +103,42 @@ from t1
     from transaction
              join cell c on transaction."toId" = c.id
       and time < now()
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+  async getAdminProductionPeersToday(): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."toId" = c.id
+      and time < now() and now() - '1 day'::interval < time
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+  async getAdminProductionPeers30Day(): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."toId" = c.id
+      and time < now() and now() - '30 day'::interval < time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
@@ -161,7 +233,9 @@ where time > now() - '30 day'::interval and time <= now();`)
       //     price: value.price
       //   }
       // })
-      consumption_peers: await this.getAdminConsumptionPeers()
+      consumption_peers: await this.getAdminConsumptionPeers(),
+      consumption_peers_today: await this.getAdminConsumptionPeersToday(),
+      consumption_peers_30day: await this.getAdminConsumptionPeers30Day(),
     }
   }
 
@@ -242,7 +316,9 @@ where time > now() - '30 day'::interval and time <= now();`)
       //     price: value.price
       //   }
       // })
-      production_peers: await this.getAdminProductionPeers()
+      production_peers: await this.getAdminProductionPeers(),
+      production_peers_today: await this.getAdminProductionPeers(),
+      production_peers_30day: await this.getAdminProductionPeers30Day()
     }
   }
 
@@ -741,8 +817,9 @@ from t1
       //     price: value.price
       //   }
       // })
-      consumption_peers: (period ? (period === '1 day' ? await this.getConsumptionPeersForToday(userCell) : await this.getConsumptionPeersFor30Day(userCell)) : await this.getConsumptionPeersForAllTime(userCell))
-
+      consumption_peers: await this.getConsumptionPeersForAllTime(userCell),
+      consumption_peers_today: await this.getConsumptionPeersForToday(userCell),
+      consumption_peers_30day: await this.getConsumptionPeersFor30Day(userCell),
     }
   }
 
@@ -920,7 +997,9 @@ from cell join t1 on total = cell.name;`)
       //     price: value.price
       //   }
       // })
-      production_peers: (period ? (period === '1 day' ? await this.getProductionPeersToday(userCell) : await this.getProductionPeers30Day(userCell)) : await this.getProductionPeersAllTime(userCell))
+      production_peers: await this.getProductionPeersAllTime(userCell),
+      production_peers_today: await this.getProductionPeersToday(userCell),
+      production_peers_30day: await this.getProductionPeers30Day(userCell)
     }
   }
 

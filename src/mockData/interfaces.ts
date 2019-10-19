@@ -173,6 +173,20 @@ export interface AdminConsumptions {
     "bought": number,
     "price": number
   }>
+  "consumption_peers_today": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>
+  "consumption_peers_30day": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>
 }
 
 export interface AdminProductions {
@@ -199,6 +213,20 @@ export interface AdminProductions {
     "price": number
   }>
   "production_peers": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>
+  "production_peers_today": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>
+  "production_peers_30day": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -255,6 +283,20 @@ export interface UserConsumption {
     "bought": number,
     "price": number
   }>
+  "consumption_peers_today": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>
+  "consumption_peers_30day": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>
 }
 
 export interface UserProduction {
@@ -281,6 +323,20 @@ export interface UserProduction {
     "price": number
   }>
   "production_peers": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>
+  "production_peers_today": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>
+  "production_peers_30day": Array<{
     "total": string,
     "id": string,
     "balance": number,

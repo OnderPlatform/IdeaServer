@@ -399,11 +399,7 @@ export class BaseController {
             ctx.response.status = 200
             break;
           }
-          case "prosumer": {
-            ctx.response.body = await this.db.service.reidsUI.userProsumerConsumption(who)
-            ctx.response.status = 200
-            break;
-          }
+          case "prosumer":
           default: {
             this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
             break;
