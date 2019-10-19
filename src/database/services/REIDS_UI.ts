@@ -36,6 +36,44 @@ export class REIDS_UI extends NodeDatabaseRepositories {
     }
   }
 
+  async getAdminConsumptionPeers(): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."toId" = c.id
+      and time < now()
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+
+  async getAdminProductionPeers(): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."fromId" = c.id
+      and time < now()
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+
   async adminConsumptions(): Promise<AdminConsumptions> {
     const tradeTableConsumers = await this.tradeRepository.find({
       where: {
@@ -77,6 +115,7 @@ from trade
 where type='prosumer') as t1
 where time > now() - '30 day'::interval and time <= now();`)
 
+
     return {
       ...queryResult[0],
       energy_today: entitiesToday.map(value => {
@@ -111,17 +150,18 @@ where time > now() - '30 day'::interval and time <= now();`)
           price: value.price
         }
       }),
-      consumption_peers: tradeTableConsumers.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
-        return {
-          total: value.cell.name,
-          id: value.cell.ethAddress,
-          balance: value.cell.balance || DEFAULT_BALANCE,
-          bought: value.energy,
-          price: value.price
-        }
-      })
+      // consumption_peers: tradeTableConsumers.map(value => {
+      //   if (typeof value.energy != "number")
+      //     throw new Error('null energy')
+      //   return {
+      //     total: value.cell.name,
+      //     id: value.cell.ethAddress,
+      //     balance: value.cell.balance || DEFAULT_BALANCE,
+      //     bought: value.energy,
+      //     price: value.price
+      //   }
+      // })
+      consumption_peers: await this.getAdminConsumptionPeers()
     }
   }
 
@@ -191,17 +231,18 @@ where time > now() - '30 day'::interval and time <= now();`)
           price: value.price
         }
       }),
-      production_peers: producers.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
-        return {
-          total: value.cell.name,
-          id: value.cell.ethAddress,
-          balance: value.cell.balance || DEFAULT_BALANCE,
-          sold: value.energy,
-          price: value.price
-        }
-      })
+      // production_peers: producers.map(value => {
+      //   if (typeof value.energy != "number")
+      //     throw new Error('null energy')
+      //   return {
+      //     total: value.cell.name,
+      //     id: value.cell.ethAddress,
+      //     balance: value.cell.balance || DEFAULT_BALANCE,
+      //     sold: value.energy,
+      //     price: value.price
+      //   }
+      // })
+      production_peers: await this.getAdminProductionPeers()
     }
   }
 
@@ -702,7 +743,63 @@ from t1
     }
   }
 
-  async userProduction(cellEthAddress: string): Promise<UserProduction | {}> {
+  async getProductionPeersToday(cell: Cell): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (select c.name as total, sum(amount) as sold, sum(cost) as price
+            from transaction
+                     join cell c on transaction."fromId" = c.id
+            where ("fromId" = ${cell.id}
+               or "toId" = ${cell.id})
+                and now() - '1 day'::interval < time
+                and time <= now()
+            group by c.name)
+select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
+from cell join t1 on total = cell.name;`)
+  }
+
+  async getProductionPeers30Day(cell: Cell): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (select c.name as total, sum(amount) as sold, sum(cost) as price
+            from transaction
+                     join cell c on transaction."fromId" = c.id
+            where ("fromId" = ${cell.id}
+               or "toId" = ${cell.id})
+                and now() - '30 day'::interval < time
+                and time <= now()
+            group by c.name)
+select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
+from cell join t1 on total = cell.name;`)
+  }
+
+  async getProductionPeersAllTime(cell: Cell): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "sold": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (select c.name as total, sum(amount) as sold, sum(cost) as price
+            from transaction
+                     join cell c on transaction."fromId" = c.id
+            where ("fromId" = ${cell.id}
+               or "toId" = ${cell.id})
+                and time <= now()
+            group by c.name)
+select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
+from cell join t1 on total = cell.name;`)
+  }
+
+  async userProduction(cellEthAddress: string, period?: string): Promise<UserProduction | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -715,9 +812,7 @@ from t1
       },
       relations: ['cell']
     })
-    if (!userTradeTable.length) {
-      return {}
-    }
+
 
     const userTradeTable1Day = await this.tradeRepository.find({
       where: {
@@ -811,17 +906,18 @@ from t1
           price: value.price
         }
       }),
-      production_peers: userTradeTable.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
-        return {
-          total: value.cell.name,
-          id: value.cell.ethAddress,
-          balance: value.cell.balance || DEFAULT_BALANCE,
-          sold: value.energy,
-          price: value.price
-        }
-      })
+      // production_peers: userTradeTable.map(value => {
+      //   if (typeof value.energy != "number")
+      //     throw new Error('null energy')
+      //   return {
+      //     total: value.cell.name,
+      //     id: value.cell.ethAddress,
+      //     balance: value.cell.balance || DEFAULT_BALANCE,
+      //     sold: value.energy,
+      //     price: value.price
+      //   }
+      // })
+      production_peers: (period ? (period === '1 day' ? await this.getProductionPeersToday(userCell) : await this.getProductionPeers30Day(userCell)) : await this.getProductionPeersAllTime(userCell))
     }
   }
 
