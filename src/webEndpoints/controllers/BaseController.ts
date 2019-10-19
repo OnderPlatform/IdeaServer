@@ -55,6 +55,7 @@ export class BaseController {
     router.get(`${namespace}/transaction`, this.getUserTransactions.bind(this))
     router.get(`${namespace}/excel/energy`, this.getUserExcelEnergy.bind(this))
     router.get(`${namespace}/excel/transaction`, this.getUserExcelTransaction.bind(this))
+    router.get(`${namespace}/excel/transaction/result.xlsx`, this.getXLSX.bind(this))
     router.get(`${namespace}/anchor`, this.getUserAnchors.bind(this))
     router.post(`${namespace}/price`, koaBody(), this.postUserPrice.bind(this))
     router.get(`${namespace}/price`, this.getUserPrice.bind(this))
@@ -578,12 +579,18 @@ export class BaseController {
         this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who))
       }
       ctx.response.status = 200
-      this.getResultXlsx(ctx)
+      ctx.response.body = {
+        report: `${ctx.host}/api/excel/transaction/result.xlsx`
+      }
     } catch (e) {
       console.log(e);
       this.helpThrowError(ctx, e.message)
     }
 
+  }
+
+  async getXLSX(ctx: Router.IRouterContext) {
+    this.getResultXlsx(ctx)
   }
 
   async getUserPrice(ctx: Router.IRouterContext) {
@@ -644,8 +651,7 @@ export class BaseController {
   }
 
   async helpThrowCodeAndMessage(ctx: Router.IRouterContext, code: number, message: string) {
-    ctx.response.status = code
-    ctx.response.body = message
+    ctx.throw(code, message)
   }
 
   async login(ctx: Router.IRouterContext) {

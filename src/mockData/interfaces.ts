@@ -166,13 +166,6 @@ export interface AdminConsumptions {
     "date": string,
     "price": number
   }>
-  "consumption_peers": Array<{
-    "total": string,
-    "id": string,
-    "balance": number,
-    "bought": number,
-    "price": number
-  }>
   "consumption_peers_today": Array<{
     "total": string,
     "id": string,
@@ -180,7 +173,7 @@ export interface AdminConsumptions {
     "bought": number,
     "price": number
   }>
-  "consumption_peers_30day": Array<{
+  "consumption_peers_30_day": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -212,13 +205,6 @@ export interface AdminProductions {
     "date": string,
     "price": number
   }>
-  "production_peers": Array<{
-    "total": string,
-    "id": string,
-    "balance": number,
-    "sold": number,
-    "price": number
-  }>
   "production_peers_today": Array<{
     "total": string,
     "id": string,
@@ -226,7 +212,7 @@ export interface AdminProductions {
     "sold": number,
     "price": number
   }>
-  "production_peers_30day": Array<{
+  "production_peers_30_day": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -276,13 +262,6 @@ export interface UserConsumption {
     "date": string,
     "price": number
   }>
-  "consumption_peers": Array<{
-    "total": string,
-    "id": string,
-    "balance": number,
-    "bought": number,
-    "price": number
-  }>
   "consumption_peers_today": Array<{
     "total": string,
     "id": string,
@@ -290,7 +269,7 @@ export interface UserConsumption {
     "bought": number,
     "price": number
   }>
-  "consumption_peers_30day": Array<{
+  "consumption_peers_30_day": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -322,13 +301,6 @@ export interface UserProduction {
     "date": string,
     "price": number
   }>
-  "production_peers": Array<{
-    "total": string,
-    "id": string,
-    "balance": number,
-    "sold": number,
-    "price": number
-  }>
   "production_peers_today": Array<{
     "total": string,
     "id": string,
@@ -336,7 +308,7 @@ export interface UserProduction {
     "sold": number,
     "price": number
   }>
-  "production_peers_30day": Array<{
+  "production_peers_30_day": Array<{
     "total": string,
     "id": string,
     "balance": number,
