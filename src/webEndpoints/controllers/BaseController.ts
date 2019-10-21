@@ -580,7 +580,7 @@ export class BaseController {
       }
       ctx.response.status = 200
       ctx.response.body = {
-        report: `${ctx.host}/api/excel/transaction/result.xlsx`
+        report: `http://server.idea.onder.tech/api/excel/transaction/result.xlsx`
       }
     } catch (e) {
       console.log(e);

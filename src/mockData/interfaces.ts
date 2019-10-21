@@ -166,14 +166,14 @@ export interface AdminConsumptions {
     "date": string,
     "price": number
   }>
-  "consumption_peers_today": Array<{
+  "peers_today": Array<{
     "total": string,
     "id": string,
     "balance": number,
     "bought": number,
     "price": number
   }>
-  "consumption_peers_30_day": Array<{
+  "peers_30_days": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -205,14 +205,14 @@ export interface AdminProductions {
     "date": string,
     "price": number
   }>
-  "production_peers_today": Array<{
+  "peers_today": Array<{
     "total": string,
     "id": string,
     "balance": number,
     "sold": number,
     "price": number
   }>
-  "production_peers_30_day": Array<{
+  "peers_30_days": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -262,14 +262,14 @@ export interface UserConsumption {
     "date": string,
     "price": number
   }>
-  "consumption_peers_today": Array<{
+  "peers_today": Array<{
     "total": string,
     "id": string,
     "balance": number,
     "bought": number,
     "price": number
   }>
-  "consumption_peers_30_day": Array<{
+  "peers_30_days": Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -301,14 +301,14 @@ export interface UserProduction {
     "date": string,
     "price": number
   }>
-  "production_peers_today": Array<{
+  "peers_today": Array<{
     "total": string,
     "id": string,
     "balance": number,
     "sold": number,
     "price": number
   }>
-  "production_peers_30_day": Array<{
+  "peers_30_days": Array<{
     "total": string,
     "id": string,
     "balance": number,

@@ -233,8 +233,8 @@ where time > now() - '30 day'::interval and time <= now();`)
       //     price: value.price
       //   }
       // })
-      consumption_peers_today: await this.getAdminConsumptionPeersToday(),
-      consumption_peers_30_day: await this.getAdminConsumptionPeers30Day(),
+      peers_today: await this.getAdminConsumptionPeersToday(),
+      peers_30_days: await this.getAdminConsumptionPeers30Day(),
     }
   }
 
@@ -315,8 +315,8 @@ where time > now() - '30 day'::interval and time <= now();`)
       //     price: value.price
       //   }
       // })
-      production_peers_today: await this.getAdminProductionPeers(),
-      production_peers_30_day: await this.getAdminProductionPeers30Day()
+      peers_today: await this.getAdminProductionPeers(),
+      peers_30_days: await this.getAdminProductionPeers30Day()
     }
   }
 
@@ -592,8 +592,8 @@ where time > now() - '30 day'::interval and time <= now();`)
       //     price: value.price
       //   }
       // })
-      production_peers_today: await this.getProductionPeersToday(userCell),
-      production_peers_30_day: await this.getProductionPeers30Day(userCell)
+      peers_today: await this.getProductionPeersToday(userCell),
+      peers_30_days: await this.getProductionPeers30Day(userCell)
     }
   }
 
@@ -816,8 +816,8 @@ from t1
       //     price: value.price
       //   }
       // })
-      consumption_peers_today: await this.getConsumptionPeersForToday(userCell),
-      consumption_peers_30_day: await this.getConsumptionPeersFor30Day(userCell),
+      peers_today: await this.getConsumptionPeersForToday(userCell),
+      peers_30_days: await this.getConsumptionPeersFor30Day(userCell),
     }
   }
 
@@ -995,8 +995,8 @@ from cell join t1 on total = cell.name;`)
       //     price: value.price
       //   }
       // })
-      production_peers_today: await this.getProductionPeersToday(userCell),
-      production_peers_30_day: await this.getProductionPeers30Day(userCell)
+      peers_today: await this.getProductionPeersToday(userCell),
+      peers_30_days: await this.getProductionPeers30Day(userCell)
     }
   }
 
