@@ -336,7 +336,7 @@ where time > now() - '30 day'::interval and time <= now();`)
       //     price: value.price
       //   }
       // })
-      peers_today: await this.getAdminProductionPeers(),
+      peers_today: await this.getAdminProductionPeersToday(),
       peers_30_days: await this.getAdminProductionPeers30Day()
     }
   }
