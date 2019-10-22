@@ -680,7 +680,7 @@ export class BaseController {
         token = jwt.sign(
           {...userInfo, isAdmin: true},
           config.adminSecret,
-          {expiresIn: "10m"}
+          {expiresIn: "24h"}
         );
 
         console.log("admin")
