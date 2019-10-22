@@ -43,6 +43,7 @@ export default class Application {
     this.db.service.mqtt.mqtt_cl.start()
     // console.log("post data cron")
     // this.postData()
+    await this.db.service.mqtt.sendNewTransactionsToMQTT()
 
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
