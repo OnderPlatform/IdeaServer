@@ -28,7 +28,10 @@ export default class Application {
   fetchingData = async () => {
     await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
     await this.db.service.amigo.sendPricesToAmigo()
-    // await this.db.service.mqtt.sendNewTransactionsToMQTT()
+  }
+
+  sendProgress = async () => {
+    await this.db.service.mqtt.sendNewTransactionsToMQTT()
   }
 
   postData = async () => {
@@ -43,7 +46,6 @@ export default class Application {
     this.db.service.mqtt.mqtt_cl.start()
     // console.log("post data cron")
     // this.postData()
-    await this.db.service.mqtt.sendNewTransactionsToMQTT()
 
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
@@ -54,6 +56,10 @@ export default class Application {
     cron.schedule("00 00 * * *", () => {
       console.log("post data cron")
       this.postData()
+    })
+    cron.schedule('*/5 * * * * *', () => {
+      console.log('Sending progress to mqtt')
+      this.sendProgress()
     })
   }
 }
