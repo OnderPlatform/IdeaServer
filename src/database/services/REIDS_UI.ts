@@ -364,9 +364,9 @@ where time > now() - '30 day'::interval and time <= now();`)
 
   async userMargin(data: UserMargin, cellEthAddress: string) {
     await this.cellRepository.update({
-      margin: data.margin
-    }, {
       ethAddress: cellEthAddress
+    }, {
+      margin: data.margin
     })
   }
 

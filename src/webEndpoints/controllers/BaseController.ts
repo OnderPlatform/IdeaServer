@@ -8,6 +8,7 @@ import { User } from "../../database/models";
 import config from "../../config/config";
 import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
+import { UserMargin } from "../../mockData/interfaces";
 
 type UserInfo = {
   userId: number,
@@ -356,8 +357,8 @@ export class BaseController {
         return
       }
 
-      const body = ctx.request.body
-      await this.db.service.reidsUI.userMargin(body.margin, who)
+      const body: UserMargin = ctx.request.body
+      await this.db.service.reidsUI.userMargin(body, who)
       await this.db.service.amigo.postPricesToAMIGOForCell(who, 'TMMM')
       ctx.response.status = 201
     } catch (e) {
