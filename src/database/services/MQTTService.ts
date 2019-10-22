@@ -102,6 +102,7 @@ export class MQTTService extends NodeDatabaseRepositories {
   }
 
   async sendNewTransactionsToMQTT() {
+    console.log('Started sending new transactions...');
     const newTransaction = await this.transactionRepository.findOne({
       where: {
         sentToMqtt: false
@@ -109,15 +110,21 @@ export class MQTTService extends NodeDatabaseRepositories {
       relations: ['from', 'to']
     })
 
+    console.log('Found new trans...');
+
     if (!newTransaction)
       return
     // вытащить данны из переменной value и отправить в publishProgress
     if (newTransaction.from.name.match(/\d+/) === null || newTransaction.to.name.match(/\d+/) === null)
       throw new Error('no digits in name of node')
+
+    console.log('Going to publish progress....');
     // @ts-ignore
     this.mqtt_cl.publishProgress(+newTransaction.from.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.to.name, newTransaction.price, newTransaction.cost)
     // @ts-ignore
     this.mqtt_cl.publishProgress(+newTransaction.to.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.to.name, newTransaction.price, newTransaction.cost)
+    console.log('Published');
+
 
     await this.transactionRepository.update({
       id: newTransaction.id
