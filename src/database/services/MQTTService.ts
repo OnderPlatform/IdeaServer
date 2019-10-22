@@ -1,6 +1,7 @@
 import { IsNull } from "typeorm";
 import * as mqtt_cl from "../../mqtt/Mqtt_client";
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
+import { EthAddresses } from "../../mockData/config";
 
 export class MQTTService extends NodeDatabaseRepositories {
   public readonly mqtt_cl: mqtt_cl.ClientMQTT
@@ -37,10 +38,10 @@ export class MQTTService extends NodeDatabaseRepositories {
       const index: number = splitTopic.findIndex(value => value.includes('enode'))
       const nodeNumerArray: string[] | null = splitTopic[index].match(/\d+/)
       if (nodeNumerArray !== null && nodeNumerArray.length) {
-        const nodeNumer = nodeNumerArray[0]
+        const nodeNumer: number = +nodeNumerArray[0]
         try {
           await this.cellRepository.update({
-            name: `Agent${nodeNumer}`
+            ethAddress: EthAddresses[nodeNumer],
           }, {
             balance: JSON.parse(message).value
           })
