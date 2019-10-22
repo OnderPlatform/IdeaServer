@@ -37,15 +37,15 @@ private started: number
     // reconnectPeriod: 1000,
     // rejectUnauthorized: false,
     // protocol: 'mqtt_cl'
-    port: 8883,
-    host: "mqtt_cl-stage.rnd.rtsoft.ru",
+    port: 80,
+    host: "35.224.129.238",
     clientId: makeid(20),
-    username: "user1",
-    password: "jejcoilld7493",
+    username: "jellyfish",
+    password: "1q2w3e4r",
     keepalive: 60,
     reconnectPeriod: 1000,
     rejectUnauthorized: false,
-    protocol: 'mqtts'
+    protocol: 'mqtt'
     }
     this.started = 0
   }
