@@ -28,7 +28,7 @@ export default class Application {
   fetchingData = async () => {
     await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
     await this.db.service.amigo.sendPricesToAmigo()
-    await this.db.service.mqtt.sendNewTransactionsToMQTT()
+    // await this.db.service.mqtt.sendNewTransactionsToMQTT()
   }
 
   postData = async () => {
