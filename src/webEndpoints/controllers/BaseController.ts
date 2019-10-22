@@ -586,7 +586,6 @@ export class BaseController {
       console.log(e);
       this.helpThrowError(ctx, e.message)
     }
-
   }
 
   async getXLSX(ctx: Router.IRouterContext) {

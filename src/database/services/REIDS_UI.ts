@@ -18,12 +18,33 @@ const DEFAULT_BALANCE = -1
 
 export class REIDS_UI extends NodeDatabaseRepositories {
   async adminTransactions(): Promise<UserTransactions> {
-    const transactions = await this.transactionRepository.find({
-      relations: ['from', 'to']
+    const transactions_today: Transaction[] = await this.transactionRepository.find({
+      where: `now() - '1 day'::interval < time`,
+      relations: ['from', 'to'],
+      order: {
+        time: "DESC"
+      }
+    })
+    const transactions_30_days: Transaction[] = await this.transactionRepository.find({
+      where: `now() - '30 day'::interval < time`,
+      relations: ['from', 'to'],
+      order: {
+        time: "DESC"
+      }
     })
 
     return {
-      transaction: transactions.map(value => {
+      transaction_today: transactions_today.map(value => {
+        return {
+          time: value.time,
+          from: value.from.name,
+          to: value.to.name,
+          price: value.price,
+          transfer_energy: value.amount,
+          transfer_coin: value.cost
+        }
+      }),
+      transaction_30_days: transactions_30_days.map(value => {
         return {
           time: value.time,
           from: value.from.name,
@@ -328,9 +349,9 @@ where time > now() - '30 day'::interval and time <= now();`)
     return {
       anchors: anchors.map(value => {
         return {
-          date: value.time,
+          data: value.time,
           participant: value.user.cell.name,
-          id: value.hashId,
+          hashId: value.hashId,
           address: value.address
         }
       })
@@ -1006,17 +1027,33 @@ from cell join t1 on total = cell.name;`)
         ethAddress: cellEthAddress
       }
     })
-    const transactions = await this.transactionRepository.find({
-      where: `"fromId" = ${myCell.id} or "toId" = ${myCell.id};`,
-      relations: ['from', 'to']
+    const transactions_today = await this.transactionRepository.find({
+      where: `("fromId" = ${myCell.id} or "toId" = ${myCell.id}) and now() - '1 day'::interval < time`,
+      relations: ['from', 'to'],
+      order: {
+        time: "DESC"
+      }
+    })
+    const transactions_30_days = await this.transactionRepository.find({
+      where: `("fromId" = ${myCell.id} or "toId" = ${myCell.id}) and now() - '30 day'::interval < time`,
+      relations: ['from', 'to'],
+      order: {
+        time: "DESC"
+      }
     })
 
-    if (!transactions.length) {
-      return {}
-    }
-
     return {
-      transaction: transactions.map(value => {
+      transaction_today: transactions_today.map(value => {
+        return {
+          time: value.time,
+          from: value.from.name,
+          to: value.to.name,
+          price: value.price,
+          transfer_energy: value.amount,
+          transfer_coin: value.cost
+        }
+      }),
+      transaction_30_days: transactions_30_days.map(value => {
         return {
           time: value.time,
           from: value.from.name,

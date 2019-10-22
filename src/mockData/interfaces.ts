@@ -223,9 +223,9 @@ export interface AdminProductions {
 
 export interface AdminAnchor {
   "anchors": Array<{
-    "date": number,
+    "data": number,
     "participant": string,
-    "id": string,
+    "hashId": string,
     "address": string
   }>
 }
@@ -317,15 +317,19 @@ export interface UserProduction {
   }>
 }
 
+interface Transaction {
+  "time": string,
+  "from": string,
+  "to": string,
+  "price": number,
+  "transfer_energy": number,
+  "transfer_coin": number
+}
+
 export interface UserTransactions {
-  "transaction": Array<{
-    "time": string,
-    "from": string,
-    "to": string,
-    "price": number,
-    "transfer_energy": number,
-    "transfer_coin": number
-  }>
+  // "transaction": Array<Transaction>
+  "transaction_today": Array<Transaction>
+  "transaction_30_days": Array<Transaction>
 }
 
 export interface UserAnchor {

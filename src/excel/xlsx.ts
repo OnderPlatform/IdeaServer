@@ -45,12 +45,19 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
     'transfer_coin',
   ];
 
-  let rowsInsert = [
+  let rowsInsert_today = [
     header,
   ];
-  transactions.transaction.forEach(value => {
-    rowsInsert.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
+  transactions.transaction_today.forEach(value => {
+    rowsInsert_today.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
   })
+  let rowsInsert_30_days = [
+    header,
+  ];
+  transactions.transaction_30_days.forEach(value => {
+    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
+  })
+
   const options = {
     '!cols':
       [
@@ -60,7 +67,7 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
       ],
   };
 
-  const buffer = xlsx.build([{ name: 'лист 1', data: rowsInsert }], options);
+  const buffer = xlsx.build([{ name: 'Today', data: rowsInsert_today }, {name: '30 days', data: rowsInsert_30_days}], options);
   fs.writeFileSync('./result.xlsx', buffer);
   console.log('Excel done')
 }
