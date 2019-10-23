@@ -168,49 +168,32 @@ from t1
   }
 
   async adminConsumptions(): Promise<AdminConsumptions> {
-    const tradeTableConsumers = await this.tradeRepository.find({
-      where: {
-        type: "consumer"
-      },
-      relations: ['cell']
-    })
-    const queryResult = await this.tradeRepository.query(`select
-       min(energy) as "minEnergy",
-       max(energy) as "maxEnergy",
-       avg(energy) as "averageEnergy",
-       min(price) as "minPrice",
-       max(price) as "maxPrice",
-       avg(price) as "averagePrice" from (select energy, price
+    const entitiesToday: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
-where type='consumer'
-union all
-select "energyIn", price
-from trade
-where type='prosumer') as t1;`)
+where type = 'consumer'
+  and date_trunc('day', now()) < time
+group by date_trunc('minute', time)
+order by 1;`)
 
-    const entitiesToday: { energy: number, time: string, price: number }[] = await this.tradeRepository.query(`select energy, time, price
-from (select energy, time, price
+    const entities30Today: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`select date(time), sum(energy) as energy, avg(price) as price
 from trade
-where type='consumer'
-union all
-select "energyIn", time, price
-from trade
-where type='prosumer') as t1
-where time > now() - '1 day'::interval and time <= now();`)
+where type = 'consumer'
+  and date_trunc('day', now()) < time
+group by date(time)
+order by 1;`)
 
-    const entities30Today: { energy: number, time: string, price: number }[] = await this.tradeRepository.query(`select energy, time, price
-from (select energy, time, price
+    const minMaxAvg = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
-where type='consumer'
-union all
-select "energyIn", time, price
-from trade
-where type='prosumer') as t1
-where time > now() - '30 day'::interval and time <= now();`)
-
+where type = 'consumer'
+  and date_trunc('day', now()) < time
+group by date_trunc('minute', time)
+order by 1)
+select min(t.energy) as "minEnergy", max(t.energy) as "maxEnergy", avg(t.energy) as "averageEnergy",
+       min(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
+from t;`)
 
     return {
-      ...queryResult[0],
+      ...minMaxAvg[0],
       energy_today: entitiesToday.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
@@ -260,39 +243,52 @@ where time > now() - '30 day'::interval and time <= now();`)
   }
 
   async adminProductions(): Promise<AdminProductions> {
-    const producers = await this.tradeRepository.find({
-      where: {
-        type: 'producer'
-      },
-      relations: ['cell']
-    })
+    const entitiesToday: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
+from trade
+where type = 'producer'
+  and date_trunc('day', now()) < time
+group by date_trunc('minute', time)
+union
+select date_trunc('minute', time) as time, sum("energyIn"+"energyOut") as energy, avg(price) as price
+from trade
+where type = 'prosumer'
+  and date_trunc('day', now()) < time
+group by date_trunc('minute', time)
+order by 1;`)
+    const entities30Today: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`with t as (select date(time), sum(energy) as energy, sum(price) as price, count(1) as len
+from trade
+where type = 'producer'
+  and now() - '30 day'::interval < time
+group by date(time)
+union
+select date(time), sum("energyIn"+"energyOut") as energy, sum(price) as price, count(1) as len
+from trade
+where type = 'prosumer'
+  and now() - '30 day'::interval < time
+group by date(time))
+select t.date, sum(energy) as energy, sum(price)/sum(len) as price from t
+group by t.date
+order by 1;`)
 
-    const minE = await this.tradeRepository.query('select min(energy) from trade where type = \'producer\';')
-    const maxE = await this.tradeRepository.query('select max(energy) from trade where type = \'producer\';')
-    const avgE = await this.tradeRepository.query('select avg(energy) from trade where type = \'producer\';')
-    const minPrice = await this.tradeRepository.query('select min(price) from trade where type = \'producer\';')
-    const maxPrice = await this.tradeRepository.query('select max(price) from trade where type = \'producer\';')
-    const avgPrice = await this.tradeRepository.query('select avg(price) from trade where type = \'producer\';')
-    const entitiesToday = await this.tradeRepository.find({
-      where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '1 day'::interval and ${columnAlias} <= now()`),
-        type: 'producer'
-      }
-    })
-    const entities30Today = await this.tradeRepository.find({
-      where: {
-        time: Raw(columnAlias => `${columnAlias} > now() - '30 day'::interval and ${columnAlias} <= now()`),
-        type: 'producer'
-      }
-    })
+    const minMaxAvg = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
+from trade
+where type = 'producer'
+  and date_trunc('day', now()) < time
+group by date_trunc('minute', time)
+union
+select date_trunc('minute', time) as time, sum("energyIn"+"energyOut") as energy, avg(price) as price
+from trade
+where type = 'prosumer'
+  and date_trunc('day', now()) < time
+group by date_trunc('minute', time)
+order by 1)
+select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
+       min(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
+from t;`)
+
 
     return {
-      minEnergy: minE[0].min,
-      maxEnergy: maxE[0].max,
-      averageEnergy: avgE[0].avg,
-      minPrice: minPrice[0].min,
-      maxPrice: maxPrice[0].max,
-      averagePrice: avgPrice[0].avg,
+      ...minMaxAvg,
       energy_today: entitiesToday.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')

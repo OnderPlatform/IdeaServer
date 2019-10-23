@@ -58,21 +58,11 @@ export class AMIGO extends NodeDatabaseRepositories {
 
     const prosumerPreparedDatas = await Promise.all(prosumers.map(value => value.mrid).map(async mrid => {
       //getting data from amigo
-      const response = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${mrid}/e`)
-      const prosumerData: CellRealData = response.data
-      let energyIn = 0
-      let energyOut = 0
-      if (prosumerData.value < 0) {
-        energyIn -= prosumerData.value
-      } else {
-        energyOut += prosumerData.value
-      }
-      Math.abs(energyIn)
-      Math.abs(energyOut)
-      // console.log("energyIn", energyIn)
-      // console.log("energyOut", energyOut)
-      // const energyIn = prosumerData.reduce((previousValue, currentValue) => previousValue - currentValue.value * (currentValue.value < 0 ? 1 : 0), 0)
-      // const energyOut = prosumerData.reduce((previousValue, currentValue) => previousValue + currentValue.value + (currentValue.value > 0 ? 1 : 0), 0)
+      const responses = await Promise.all([
+        axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${mrid}/e/row?purposeKey=IF15M&length=-1`),
+        axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit/${mrid}/e/row?purposeKey=OF15M&length=-1`),
+      ])
+      const [energyIn, energyOut] = responses.map(value => value.data[0].value)
       const prosumerEntry = await this.cellRepository.findOneOrFail({
         where: {
           mrid: mrid
@@ -80,7 +70,7 @@ export class AMIGO extends NodeDatabaseRepositories {
       })
 
       const prosumerPreparedData: ProsumerData = {
-        time: prosumerData.timeStamp,
+        time: responses[1].data[0].timeStamp,
         prosumerEthAddress: prosumerEntry.ethAddress,
         energyIn: energyIn,
         energyOut: energyOut
