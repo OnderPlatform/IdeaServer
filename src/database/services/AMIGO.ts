@@ -153,7 +153,7 @@ export class AMIGO extends NodeDatabaseRepositories {
     //     .then(value => {
     //       this.handleDataFromAMIGO(value)
     //     })
-    //   this.sendNewTransactionsToMQTT()
+    //   this.sendNewTransactionToMQTT()
     // }, 2000)
     const prosumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyStoragingUnit`)
     const consumersResponse = await axios.get(`${AMIGO_SERVER}/api/energyConsumer`)

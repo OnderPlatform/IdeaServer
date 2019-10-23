@@ -109,7 +109,7 @@ export class MQTTService extends NodeDatabaseRepositories {
     }
   }
 
-  async sendNewTransactionsToMQTT() {
+  async sendNewTransactionToMQTT() {
     const newTransaction = await this.transactionRepository.findOne({
       where: {
         sentToMqtt: false

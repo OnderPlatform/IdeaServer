@@ -31,7 +31,7 @@ export default class Application {
   }
 
   sendProgress = async () => {
-    await this.db.service.mqtt.sendNewTransactionsToMQTT()
+    await this.db.service.mqtt.sendNewTransactionToMQTT()
   }
 
   postData = async () => {
