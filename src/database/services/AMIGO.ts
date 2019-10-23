@@ -74,7 +74,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         time: responses[1].data[0].timeStamp,
         prosumerEthAddress: prosumerEntry.ethAddress,
         energyIn: energyIn,
-        energyOut: energyOut
+        energyOut: energyOut,
       }
 
       return prosumerPreparedData
@@ -283,6 +283,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         time: value.time,
         energyIn: value.energyIn,
         energyOut: value.energyOut,
+        energy: value.energyIn+value.energyOut,
         type: 'prosumer',
         energyInAll: (tmp ? (tmp.energyInAll ? tmp.energyInAll : 0) : 0) + value.energyIn,
         price: 0,
@@ -332,7 +333,6 @@ export class AMIGO extends NodeDatabaseRepositories {
     }))
 
     // 3. Price: Working with prosumers
-    let priceForConsumer: number = 0
     await Promise.all(newProsumerTradeIds.map(async (value: number) => {
       // Finding last entry in trade table
       const lastProsumerTrade = await this.tradeRepository.findOneOrFail({
@@ -382,7 +382,7 @@ export class AMIGO extends NodeDatabaseRepositories {
       }, 0)
 
       const S4 = 0
-      priceForConsumer = (S1 + S2) / (S3 + S4)
+      const priceForConsumer = (S1 + S2) / (S3 + S4)
       console.log("priceForConsumerAndProsumer: ", priceForConsumer);
 
 
@@ -476,6 +476,17 @@ export class AMIGO extends NodeDatabaseRepositories {
         return previousValue + (currentValue.energyIn + currentValue.energyOut) * currentValue.price
       }, 0)
       const S5 = S6 * lastConsumerInTradeTable.energy / S3
+
+
+      const S7 = Trade_producer_table.reduce((previousValue, currentValue) => {
+        if (typeof currentValue.energy != 'number')
+          throw new Error('producer table consists null \"energy\" field.')
+        return previousValue + currentValue.energy * currentValue.price
+      }, 0)
+
+
+
+      const priceForConsumer = S7/S1
 
       const pay = priceForConsumer * (lastConsumerInTradeTable.energy + lastConsumerInTradeTable.energy * (S1 + S2 - S3 - S4) / S3) + S5
       await this.tradeRepository.update({

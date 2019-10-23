@@ -17,6 +17,16 @@ import { Cell, Transaction } from "../models";
 const DEFAULT_BALANCE = -1
 
 export class REIDS_UI extends NodeDatabaseRepositories {
+  private readonly timeOffset: string
+
+  constructor() {
+    super();
+    this.timeOffset = '8 hour'
+  }
+
+
+
+
   async adminTransactions(): Promise<UserTransactions> {
     const transactions_today: Transaction[] = await this.transactionRepository.find({
       where: `now() - '1 day'::interval < time`,
@@ -195,8 +205,6 @@ from t;`)
     return {
       ...minMaxAvg[0],
       energy_today: entitiesToday.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('energy is null')
         return {
           date: value.time,
           energy: value.energy
@@ -288,7 +296,7 @@ from t;`)
 
 
     return {
-      ...minMaxAvg,
+      ...minMaxAvg[0],
       energy_today: entitiesToday.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
@@ -723,116 +731,50 @@ from t1
       throw new Error('not a consumer')
     }
 
-    const userTradeTable = await this.tradeRepository.find({
-      where: {
-        type: 'consumer',
-        cell: userCell
-      },
-      relations: ['cell']
-    })
-
-    const userTradeTable1Day = await this.tradeRepository.find({
-      where: {
-        type: 'consumer',
-        cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'1 day\'::interval and ${columnAlias} <= now()`)
-      }
-    })
-    const userTradeTable30Day = await this.tradeRepository.find({
-      where: {
-        type: 'consumer',
-        cell: userCell,
-        time: Raw(columnAlias => `${columnAlias} > now() - \'30 day\'::interval and ${columnAlias} <= now()`)
-      }
-    })
-
-
-    if (typeof userTradeTable[0].energy != "number")
-      throw new Error('user trade table seems to be empty')
-    const minE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (typeof currentValue.energy != "number")
-        throw new Error('energy is null')
-      return currentValue.energy < previousValue ? currentValue.energy : previousValue
-    }, userTradeTable[0].energy)
-    const maxE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (typeof currentValue.energy != "number")
-        throw new Error('energy is null')
-      return currentValue.energy > previousValue ? currentValue.energy : previousValue
-    }, userTradeTable[0].energy)
-    const avgE = userTradeTable.reduce((previousValue, currentValue) => {
-      if (typeof currentValue.energy != "number")
-        throw new Error('energy is null')
-      return currentValue.energy + previousValue
-    }, 0) / userTradeTable.length
-
-    if (typeof userTradeTable[0].price != "number")
-      throw new Error('user trade table seems to be empty')
-    const minPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (typeof currentValue.price != "number")
-        throw new Error('price is null')
-      return currentValue.price < previousValue ? currentValue.price : previousValue
-    }, userTradeTable[0].price)
-    const maxPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (typeof currentValue.price != "number")
-        throw new Error('price is null')
-      return currentValue.price > previousValue ? currentValue.price : previousValue
-    }, userTradeTable[0].price)
-    const avgPrice = userTradeTable.reduce((previousValue, currentValue) => {
-      if (typeof currentValue.price != "number")
-        throw new Error('price is null')
-      return currentValue.price + previousValue
-    }, 0) / userTradeTable.length
+    const userTradeTable1Day: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price from trade
+where "cellId" = ${userCell.id}
+and date_trunc('day', now()) < time
+order by 1;`)
+    const userTradeTable30Day: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price from trade
+where "cellId" = ${userCell.id}
+and now() - '30 day'::interval < time
+group by date(time)
+order by 1;`)
+    const minMaxAvg = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
+           from trade
+           where "cellId" = ${userCell.id}
+             and date_trunc('day', now()) < time
+           order by 1)
+select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
+       max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
+from t;`)
 
     return {
-      minEnergy: minE,
-      maxEnergy: maxE,
-      averageEnergy: avgE,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      averagePrice: avgPrice,
+      ...minMaxAvg[0],
       energy_today: userTradeTable1Day.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
         return {
           date: value.time,
           energy: value.energy
         }
       }),
       energy_30_day: userTradeTable30Day.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('null energy')
         return {
           date: value.time,
           energy: value.energy
         }
       }),
       price_today: userTradeTable1Day.map(value => {
-        if (typeof value.price != "number")
-          throw new Error('null price')
         return {
           date: value.time,
           price: value.price
         }
       }),
       price_30_day: userTradeTable30Day.map(value => {
-        if (typeof value.price != "number")
-          throw new Error('null price')
         return {
           date: value.time,
           price: value.price
         }
       }),
-      // consumption_peers: userTradeTable.map(value => {
-      //   if (typeof value.energy != "number")
-      //     throw new Error('null energy')
-      //   return {
-      //     total: value.cell.name,
-      //     id: value.cell.ethAddress,
-      //     balance: value.cell.balance || DEFAULT_BALANCE,
-      //     bought: value.energy,
-      //     price: value.price
-      //   }
-      // })
       peers_today: await this.getConsumptionPeersForToday(userCell),
       peers_30_days: await this.getConsumptionPeersFor30Day(userCell),
     }
