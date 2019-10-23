@@ -46,7 +46,7 @@ export default class Application {
     this.db.service.mqtt.mqtt_cl.start()
     // console.log("post data cron")
     // this.postData()
-    this.fetchingData()
+    // this.fetchingData()
 
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
@@ -59,8 +59,8 @@ export default class Application {
       this.postData()
     })
     cron.schedule('*/5 * * * * *', () => {
-      // console.log('Sending progress to mqtt')
-      // this.sendProgress()
+      console.log('Sending progress to mqtt')
+      this.sendProgress()
     })
   }
 }
