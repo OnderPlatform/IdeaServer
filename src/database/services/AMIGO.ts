@@ -30,12 +30,13 @@ export class AMIGO extends NodeDatabaseRepositories {
   }
 
   async start() {
-    const tmp = await this.cellRepository.find()
-    if (!tmp.length) {
+    const cells = await this.cellRepository.find()
+    if (!cells.length) {
       await this.fetchInitialDataFromAMIGO()
       await this.initialDataForOperator()
       // await this.db.service.initMockData()
     }
+
   }
 
   async fetchAndHandleDataFromAMIGO() {
@@ -733,37 +734,41 @@ export class AMIGO extends NodeDatabaseRepositories {
     })
 
     const cellAMIGOType = converCellTypeToAMIGOCellType(cell.type)
-    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/${mapCellTypeToEndpoint(cellAMIGOType)}?purposeKey=${purposeKey && mapCellTypeToPurposeKey(cellAMIGOType)}`
+    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/cost/row?purposeKey=FACT`
     if (typeof cell.initPrice != 'object')
       throw new Error('initPrice is not an object')
-    switch (cellAMIGOType) {
-      case "generatingUnit": {
-        const response = await axios.post(url, cell.initPrice.map(initPriceValue => ({
-          timeStamp,
-          measurementValueQuality:
-            {
-              validity: "GOOD",
-              source: "DERIVED"
-            },
-          value: initPriceValue
-        })))
-        // console.log(response.data);
-        break;
+    try {
+      switch (cellAMIGOType) {
+        case "generatingUnit": {
+          const response = await axios.post(url, cell.initPrice.map(initPriceValue => ({
+            timeStamp,
+            measurementValueQuality:
+              {
+                validity: "GOOD",
+                source: "DERIVED"
+              },
+            value: initPriceValue
+          })))
+          // console.log(response.data);
+          break;
+        }
+        case "energyConsumer":
+        case "energyStoragingUnit": {
+          const response = await axios.post(url, [{
+            timeStamp: lastTradeEntry.time,
+            measurementValueQuality:
+              {
+                validity: "GOOD",
+                source: "DERIVED"
+              },
+            value: lastTradeEntry.price
+          }])
+          // console.log(response.data);
+          break;
+        }
       }
-      case "energyConsumer":
-      case "energyStoragingUnit": {
-        const response = await axios.post(url, [{
-          timeStamp: lastTradeEntry.time,
-          measurementValueQuality:
-            {
-              validity: "GOOD",
-              source: "DERIVED"
-            },
-          value: lastTradeEntry.price
-        }])
-        // console.log(response.data);
-        break;
-      }
+    } catch (e) {
+      console.log(e);
     }
   }
 }

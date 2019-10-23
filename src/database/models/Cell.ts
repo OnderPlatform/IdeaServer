@@ -30,5 +30,8 @@ export class Cell extends BaseEntity {
   opCoef?: number
 
   @Column({ nullable: true,unique: true})
-  mrid!: string //поменял так как падало, nullable true
+  mrid?: string //поменял так как падало, nullable true
+
+  @Column({unique: true, nullable: true})
+  mqttAlias?: string
 }

@@ -9,17 +9,24 @@ export class MQTTService extends NodeDatabaseRepositories {
   constructor() {
     super();
     this.mqtt_cl = new mqtt_cl.ClientMQTT()
+    EthAddresses.forEach(async (value, index) => {
+      await this.cellRepository.update({
+        ethAddress: value
+      }, {
+        mqttAlias: `Agent${index+1}`
+      })
+    })
   }
 
   async updateTransactionState(from: string, to: string, approved: boolean) {
     const fromCell = await this.cellRepository.findOneOrFail({
       where: {
-        name: from
+        mqttAlias: from
       }
     })
     const toCell = await this.cellRepository.findOneOrFail({
       where: {
-        name: to
+        mqttAlias: to
       }
     })
     await this.transactionRepository.update({
@@ -63,12 +70,12 @@ export class MQTTService extends NodeDatabaseRepositories {
           const parsedMessage = JSON.parse(message)
           const seller = await this.cellRepository.findOneOrFail({
             where: {
-              name: parsedMessage.seller
+              mqttAlias: parsedMessage.seller
             }
           })
           const contragent = await this.cellRepository.findOneOrFail({
             where: {
-              name: parsedMessage.contragent
+              mqttAlias: parsedMessage.contragent
             }
           })
           await this.transactionRepository.update({
@@ -113,13 +120,15 @@ export class MQTTService extends NodeDatabaseRepositories {
     if (!newTransaction)
       return
     // вытащить данны из переменной value и отправить в publishProgress
-    if (newTransaction.from.name.match(/\d+/) === null || newTransaction.to.name.match(/\d+/) === null)
-      throw new Error('no digits in name of node')
+    if (!newTransaction.from.mqttAlias || !newTransaction.to.mqttAlias)
+      throw new Error('mqttAlias is null')
+    if (newTransaction.from.mqttAlias.match(/\d+/) === null || newTransaction.to.mqttAlias.match(/\d+/) === null)
+      throw new Error('no digits in mqttAlias of node')
 
     // @ts-ignore
-    this.mqtt_cl.publishProgress(+newTransaction.from.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.to.name, newTransaction.price, newTransaction.cost)
+    this.mqtt_cl.publishProgress(+newTransaction.from.mqttAlias.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.mqttAlias, newTransaction.to.mqttAlias, newTransaction.price, newTransaction.cost)
     // @ts-ignore
-    this.mqtt_cl.publishProgress(+newTransaction.to.name.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.name, newTransaction.to.name, newTransaction.price, newTransaction.cost)
+    this.mqtt_cl.publishProgress(+newTransaction.to.mqttAlias.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.mqttAlias, newTransaction.to.mqttAlias, newTransaction.price, newTransaction.cost)
 
     await this.transactionRepository.update({
       id: newTransaction.id
