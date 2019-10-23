@@ -263,13 +263,13 @@ where type = 'prosumer'
   and date_trunc('day', now()) < time
 group by date_trunc('minute', time)
 order by 1;`)
-    const entities30Today: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`with t as (select date(time), sum(energy) as energy, sum(price) as price, count(1) as len
+    const entities30Today: {time: string, energy: number, price: number}[] = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, sum(price) as price, count(1) as len
 from trade
 where type = 'producer'
   and now() - '30 day'::interval < time
 group by date(time)
 union
-select date(time), sum("energyIn"+"energyOut") as energy, sum(price) as price, count(1) as len
+select date(time) as time, sum("energyIn"+"energyOut") as energy, sum(price) as price, count(1) as len
 from trade
 where type = 'prosumer'
   and now() - '30 day'::interval < time
@@ -298,48 +298,29 @@ from t;`)
     return {
       ...minMaxAvg[0],
       energy_today: entitiesToday.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('energy is null')
         return {
           date: value.time,
           energy: value.energy
         }
       }),
       energy_30_day: entities30Today.map(value => {
-        if (typeof value.energy != "number")
-          throw new Error('energy is null')
         return {
           date: value.time,
           energy: value.energy
         }
       }),
       price_today: entitiesToday.map(value => {
-        if (typeof value.price != "number")
-          throw new Error('price is null')
         return {
           date: value.time,
           price: value.price
         }
       }),
       price_30_day: entities30Today.map(value => {
-        if (typeof value.price != "number")
-          throw new Error('price is null')
         return {
           date: value.time,
           price: value.price
         }
       }),
-      // production_peers: producers.map(value => {
-      //   if (typeof value.energy != "number")
-      //     throw new Error('null energy')
-      //   return {
-      //     total: value.cell.name,
-      //     id: value.cell.ethAddress,
-      //     balance: value.cell.balance || DEFAULT_BALANCE,
-      //     sold: value.energy,
-      //     price: value.price
-      //   }
-      // })
       peers_today: await this.getAdminProductionPeersToday(),
       peers_30_days: await this.getAdminProductionPeers30Day()
     }
