@@ -144,12 +144,22 @@ export interface HashingInfo {
 }
 
 export interface AdminConsumptions {
-  "minEnergy": number,
-  "maxEnergy": number,
-  "averageEnergy": number,
-  "minPrice": number,
-  "maxPrice": number,
-  "averagePrice": number,
+  today: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  },
+  30: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  }
   "energy_today": Array<{
     "date": string,
     "energy": number
@@ -183,12 +193,22 @@ export interface AdminConsumptions {
 }
 
 export interface AdminProductions {
-  "minEnergy": number,
-  "maxEnergy": number,
-  "averageEnergy": number,
-  "minPrice": number,
-  "maxPrice": number,
-  "averagePrice": number,
+  today: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  },
+  30: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  }
   "energy_today": Array<{
     "date": string,
     "energy": number
@@ -240,12 +260,22 @@ export interface UserMargin {
 }
 
 export interface UserConsumption {
-  "minEnergy": number,
-  "maxEnergy": number,
-  "averageEnergy": number,
-  "minPrice": number,
-  "maxPrice": number,
-  "averagePrice": number,
+  today: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  },
+  30: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  }
   "energy_today": Array<{
     "date": string,
     "energy": number
@@ -279,12 +309,22 @@ export interface UserConsumption {
 }
 
 export interface UserProduction {
-  "minEnergy": number,
-  "maxEnergy": number,
-  "averageEnergy": number,
-  "minPrice": number,
-  "maxPrice": number,
-  "averagePrice": number,
+  today: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  },
+  30: {
+    "minEnergy": number,
+    "maxEnergy": number,
+    "averageEnergy": number,
+    "minPrice": number,
+    "maxPrice": number,
+    "averagePrice": number,
+  }
   "energy_today": Array<{
     "date": string,
     "energy": number

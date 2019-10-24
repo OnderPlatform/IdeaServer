@@ -18,8 +18,8 @@ import {
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 
 const DEFAULT_OPCOEF = 3
-const DEFAULT_INITPOWER = [0, 3, 5, 7, 9]
-const DEFAULT_INITPRICE = [0, 1, 2, 3, 4]
+const DEFAULT_INITPOWER = [0, 3, 5, 7]
+const DEFAULT_INITPRICE = [1, 2, 3, 4]
 const DEFAULT_MARGIN = 5
 
 

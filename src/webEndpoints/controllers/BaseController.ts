@@ -443,13 +443,9 @@ export class BaseController {
           }
         })
         switch (cell.type) {
-          case "producer": {
-            ctx.response.body = await this.db.service.reidsUI.userProduction(who)
-            ctx.response.status = 200
-            break
-          }
+          case "producer":
           case "prosumer": {
-            ctx.response.body = await this.db.service.reidsUI.userProsumerProduction(who)
+            ctx.response.body = await this.db.service.reidsUI.userProduction(who)
             ctx.response.status = 200
             break
           }
