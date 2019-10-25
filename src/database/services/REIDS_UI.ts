@@ -28,7 +28,7 @@ export class REIDS_UI extends NodeDatabaseRepositories {
   }
 
   async adminTransactions(): Promise<UserTransactions> {
-    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore',
+    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -37,8 +37,9 @@ export class REIDS_UI extends NodeDatabaseRepositories {
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
 where date_trunc('day', now()) < time
 order by time desc;`)
+    console.log(transactions_today);
 
-    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore',
+    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -300,7 +301,10 @@ from t;`)
 
   async adminAnchor(): Promise<AdminAnchor> {
     const anchors = await this.anchorRepository.find({
-      relations: ['user', 'user.cell']
+      relations: ['user', 'user.cell'],
+      order: {
+        time: "DESC"
+      }
     })
 
     return {
@@ -555,7 +559,7 @@ from t;`)
         ethAddress: cellEthAddress
       }
     })
-    const transactions_today = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore',
+    const transactions_today = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -565,7 +569,7 @@ from transaction join cell c on transaction."toId" = c.id join cell c2 on transa
 where date_trunc('day', now()) < time
 and ("fromId"=${myCell.id} or "toId"=${myCell.id})
 order by time desc;`)
-    const transactions_30_days = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore',
+    const transactions_30_days = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -597,7 +601,10 @@ order by time desc;`)
       where: {
         user: user
       },
-      relations: ['user', 'user.cell']
+      relations: ['user', 'user.cell'],
+      order: {
+        time: "DESC"
+      }
     })
 
     if (!userAnchors.length) {
