@@ -8,7 +8,7 @@ export class Transaction extends BaseEntity {
   id!: number
 
   @Column({type: 'timestamptz'})
-  time!: string
+  time!: Date
 
   @ManyToOne(type => Cell, cell => cell.id)
   from!: Cell

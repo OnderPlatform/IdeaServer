@@ -62,7 +62,7 @@ export interface DataFromUI {
 // Interfaces related to algorithm
 export interface TransactionEntry {
   cost: number,
-  time: string,
+  time: Date,
   price: number,
   amount: number,
   from: string,
@@ -161,19 +161,19 @@ export interface AdminConsumptions {
     "averagePrice": number,
   }
   "energy_today": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "energy_30_day": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "price_today": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "price_30_day": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "peers_today": Array<{
@@ -210,19 +210,19 @@ export interface AdminProductions {
     "averagePrice": number,
   }
   "energy_today": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "energy_30_day": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "price_today": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "price_30_day": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "peers_today": Array<{
@@ -277,19 +277,19 @@ export interface UserConsumption {
     "averagePrice": number,
   }
   "energy_today": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "energy_30_day": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "price_today": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "price_30_day": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "peers_today": Array<{
@@ -326,19 +326,19 @@ export interface UserProduction {
     "averagePrice": number,
   }
   "energy_today": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "energy_30_day": Array<{
-    "date": string,
+    "date": Date,
     "energy": number
   }>
   "price_today": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "price_30_day": Array<{
-    "date": string,
+    "date": Date,
     "price": number
   }>
   "peers_today": Array<{
@@ -357,8 +357,8 @@ export interface UserProduction {
   }>
 }
 
-interface Transaction {
-  "time": string,
+export interface Transaction {
+  "time": Date,
   "from": string,
   "to": string,
   "price": number,

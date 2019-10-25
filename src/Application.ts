@@ -42,8 +42,8 @@ export default class Application {
     await this.web.start()
     await this.db.initConnection()
     await this.db.service.amigo.start()
-    // this.db.service.mqtt.mqtt_cl.add_handler((value: string, message: string) => this.db.service.mqtt.newTransactionStateFromMQTT(value, message))
-    // this.db.service.mqtt.mqtt_cl.start()
+    this.db.service.mqtt.mqtt_cl.add_handler((value: string, message: string) => this.db.service.mqtt.newTransactionStateFromMQTT(value, message))
+    this.db.service.mqtt.mqtt_cl.start()
     // console.log("post data cron")
     // this.postData()
     // this.fetchingData()
@@ -51,16 +51,16 @@ export default class Application {
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
     cron.schedule('0 */15 * * * *', () => {
-      // console.log("fetch data cron")
-      // this.fetchingData()
+      console.log("fetch data cron")
+      this.fetchingData()
     });
     cron.schedule("00 00 * * *", () => {
-      // console.log("post data cron")
-      // this.postData()
+      console.log("post data cron")
+      this.postData()
     })
     cron.schedule('*/5 * * * * *', () => {
-      // console.log('Sending progress to mqtt')
-      // this.sendProgress()
+      console.log('Sending progress to mqtt')
+      this.sendProgress()
     })
   }
 }
