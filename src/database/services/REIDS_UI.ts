@@ -23,11 +23,8 @@ interface GraphicEntry {
 }
 
 export class REIDS_UI extends NodeDatabaseRepositories {
-  private readonly timeOffset: string
-
   constructor() {
     super();
-    this.timeOffset = '8 hour'
   }
 
   async adminTransactions(): Promise<UserTransactions> {
@@ -494,12 +491,14 @@ from cell join t1 on total = cell.name;`)
       }
     })
 
-
     const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price
 from trade
 where "cellId" = ${userCell.id}
   and date_trunc('day', now()) < time
 order by 1;`)
+
+
+
     const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where "cellId" = ${userCell.id}

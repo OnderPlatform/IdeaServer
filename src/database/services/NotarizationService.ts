@@ -160,7 +160,7 @@ export class NotarizationService extends NodeDatabaseRepositories {
         return
       }
       // console.log('Notarizing this one: ', anchoringData)
-      const response = await axios.post('http://localhost:9505/timestamp/add/', anchoringData, {
+      const response = await axios.post('http://localhost:9505/timestamp/add/', JSON.parse(anchoringData), {
         headers: {
           'Content-Type': 'application/json',
         }

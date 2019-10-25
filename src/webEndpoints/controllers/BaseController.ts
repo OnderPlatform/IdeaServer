@@ -4,7 +4,7 @@ import * as koaBody from 'koa-body'
 import NodeDatabase from "../../database/services/NodeDatabase";
 import * as jwt from "jsonwebtoken";
 import { getRepository } from "typeorm";
-import { User } from "../../database/models";
+import { Anchor, User } from "../../database/models";
 import config from "../../config/config";
 import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
@@ -743,7 +743,7 @@ export class BaseController {
   };
 
   async setDateFromAnchoringTable(data: string, user: User): Promise<string> {
-    const parsed = data
+    const parsed = JSON.parse(data)
     const anchoringEntry = await this.db.service.repositories.anchorRepository.findOne({
       where: {
         user: user
@@ -775,8 +775,8 @@ export class BaseController {
       if (isAdmin) {
         const users = await this.db.service.repositories.userRepository.find({relations: ['cell']})
         ctx.response.body = await Promise.all(users.filter(value => !value.isAdmin && value.cell.type != 'operator').map(async currentUser => {
-          const infoToCheck = await this.db.service.notarization.getAnchoringDataForUser(currentUser)
-          const anchorEntry = await this.db.service.repositories.anchorRepository.findOne({
+          const infoToCheck: string = await this.db.service.notarization.getAnchoringDataForUser(currentUser)
+          const anchorEntry: Anchor | undefined = await this.db.service.repositories.anchorRepository.findOne({
             where: {
               user: currentUser
             },
@@ -791,7 +791,8 @@ export class BaseController {
               success: null,
               lastChecked: null
             }
-          return await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, currentUser), {
+          // console.log('Checking this one:', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, currentUser)));
+          return await axios.post('http://localhost:9505/timestamp/check', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, currentUser)), {
             headers: {
               'Content-Type': 'application/json',
             }
@@ -836,7 +837,7 @@ export class BaseController {
             time: "DESC"
           }
         })).lastCheckingDate
-        const response = await axios.post('http://localhost:9505/timestamp/check', await this.setDateFromAnchoringTable(infoToCheck, user), {
+        const response = await axios.post('http://localhost:9505/timestamp/check', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, user)), {
           headers: {
             'Content-Type': 'application/json',
           }
