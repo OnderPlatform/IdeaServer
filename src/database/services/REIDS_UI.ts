@@ -496,9 +496,7 @@ from trade
 where "cellId" = ${userCell.id}
   and date_trunc('day', now()) < time
 order by 1;`)
-
-
-
+    
     const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where "cellId" = ${userCell.id}
