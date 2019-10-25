@@ -185,14 +185,15 @@ export class BaseController {
     const who: string = await this.findEthAddressByEmail(userEmail)
     const getNeighboursIdResponse = await axios.get(`${mapEthAddressToURL(who)}/neighbours`)
     const neighbourIds: { neighbours: Array<{ neighbourId: number }> } = getNeighboursIdResponse.data
-    return Promise.all(neighbourIds.neighbours.map(async value => {
+    return await Promise.all(neighbourIds.neighbours.map(async value => {
       try {
         const response = await axios.post(`${mapEthAddressToURL(who)}/closechannel/${value.neighbourId}`)
         return {
           status: response.status,
-          message: `Closing channel between you and neighbour ${value.neighbourId} result: ${response.data}`,
+          message: `Closing channel between you and neighbour ${value.neighbourId} result: ${JSON.stringify(response.data)}`,
         }
       } catch (e) {
+        console.log(e);
         return {
           status: 500,
           message: `Could not close channel between you and neighbour ${value.neighbourId}: ${e.message}`,
