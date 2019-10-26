@@ -385,7 +385,23 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser)
+          const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
+            where: {
+              ethAddress: discoveringuser
+            }
+          })
+          switch (cell.type) {
+            case "consumer": {
+              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser)
+              ctx.response.status = 200
+              break;
+            }
+            case "prosumer":
+            default: {
+              this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
+              break;
+            }
+          }
         } else {
           ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
         }
@@ -402,7 +418,6 @@ export class BaseController {
             ctx.response.status = 200
             break;
           }
-          case "prosumer":
           default: {
             this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
             break;
@@ -432,7 +447,23 @@ export class BaseController {
         const discoveringuser = params.get('ethId')
         console.log("discoveringuser: ", discoveringuser)
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser)
+          const cell = await this.db.service.repositories.cellRepository.findOneOrFail({
+            where: {
+              ethAddress: discoveringuser
+            }
+          })
+          switch (cell.type) {
+            case "producer":
+            case "prosumer": {
+              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser)
+              ctx.response.status = 200
+              break
+            }
+            default: {
+              this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
+              break
+            }
+          }
         } else {
           ctx.response.body = await this.db.service.reidsUI.adminProductions()
         }
@@ -759,6 +790,26 @@ export class BaseController {
     return JSON.stringify(Object.assign(parsed, {date: anchoringEntry.time}))
   }
 
+  // async checkNotarization(ctx: Router.IRouterContext) {
+  //   check(ctx)
+  //   if (ctx.response.status == 401) {
+  //     return
+  //   }
+  //   try {
+  //     const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
+  //     const user = await this.db.service.repositories.userRepository.findOneOrFail({
+  //       where: {
+  //         email: <string>ctx.request.headers['from']
+  //       }
+  //     })
+  //     const isAdmin = user.isAdmin
+  //     if (isAdmin) {
+  //
+  //     } else {
+  //
+  //     }
+  //   }
+  // }
 
   async getCheckUserNotarization(ctx: Router.IRouterContext) {
     check(ctx)
