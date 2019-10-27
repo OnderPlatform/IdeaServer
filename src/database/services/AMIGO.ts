@@ -224,6 +224,12 @@ export class AMIGO extends NodeDatabaseRepositories {
 
   }
 
+  round_time(time: string): string {
+    const date = new Date(time)
+    date.setMinutes( Math.round(date.getMinutes()/15)*15 )
+    return date.toISOString()
+  }
+
   async handleDataFromAMIGO(data: DataFromAMIGO) {
     console.log('Got data: ', data);
     // 1. Inserting new entries
@@ -234,7 +240,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         }
       })
       const insertResult = await this.tradeRepository.insert({
-        time: value.time,
+        time: this.round_time(value.time),
         energy: value.energy,
         power: value.power,
         cell: cell,
@@ -254,7 +260,7 @@ export class AMIGO extends NodeDatabaseRepositories {
 
       const insertResult = await this.tradeRepository.insert({
         cell: cell,
-        time: value.time,
+        time: this.round_time(value.time),
         energy: value.energy,
         type: 'consumer',
         price: 0
@@ -280,7 +286,7 @@ export class AMIGO extends NodeDatabaseRepositories {
 
       const insertResult = await this.tradeRepository.insert({
         cell: cell,
-        time: value.time,
+        time: this.round_time(value.time),
         energyIn: value.energyIn,
         energyOut: value.energyOut,
         energy: value.energyIn+value.energyOut,
