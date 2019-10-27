@@ -28,18 +28,18 @@ export class REIDS_UI extends NodeDatabaseRepositories {
   }
 
   async adminTransactions(): Promise<UserTransactions> {
-    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
+    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
        price,
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where date_trunc('day', now()) < time
+where date_trunc('day', now()) - '8 hour'::interval < time
 order by time desc;`)
     console.log(transactions_today);
 
-    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
+    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -66,7 +66,7 @@ order by time desc;`)
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."fromId" = c.id
-      and time < now() and date_trunc('day', now()) < time
+      and time < now() and date_trunc('day', now()) - '8 hour'::interval < time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
@@ -103,7 +103,7 @@ from t1
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."toId" = c.id
-      and time < now() and date_trunc('day', now()) < time
+      and time < now() and date_trunc('day', now()) - '8 hour'::interval < time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
@@ -130,31 +130,31 @@ from t1
   }
 
   async adminConsumptions(): Promise<AdminConsumptions> {
-    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and date_trunc('day', now()) < time
+  and date_trunc('day', now()) - '8 hour'::interval < time
 group by date_trunc('minute', time)
 order by 1;`)
 
-    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
   and now() - '30 day'::interval < time
 group by date(time)
 order by 1;`)
 
-    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and date_trunc('day', now()) < time
+  and date_trunc('day', now()) - '8 hour'::interval < time
 group by date_trunc('minute', time)
 order by 1)
 select min(t.energy) as "minEnergy", max(t.energy) as "maxEnergy", avg(t.energy) as "averageEnergy",
        min(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
 from t;`)
 
-    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
   and now() - '30 day'::interval < time
@@ -222,23 +222,23 @@ from t;`)
   }
 
   async adminProductions(): Promise<AdminProductions> {
-    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
-  and date_trunc('day', now()) < time
+  and date_trunc('day', now()) - '8 hour'::interval < time
 group by date_trunc('minute', time)
 order by 1;`)
-    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
   and now() - '30 day'::interval < time
 group by date(time)
 order by 1;`)
 
-    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
-  and date_trunc('day', now()) < time
+  and date_trunc('day', now()) - '8 hour'::interval < time
 group by date_trunc('minute', time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -248,7 +248,7 @@ select min(energy) as "minEnergy",
        max(price)  as "maxPrice",
        avg(price)  as "averagePrice"
 from t;`)
-    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
   and now() - '30 day'::interval < time
@@ -339,7 +339,7 @@ from t;`)
     "price": number
   }>> {
     return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
-where ("fromId" = ${cell.id} or "toId"=${cell.id}) and date_trunc('day', now()) < time
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and date_trunc('day', now()) - '8 hour'::interval < time
 group by c.name, c."ethAddress"
 order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
@@ -399,25 +399,25 @@ order by c.name)
       throw new Error('not a consumer')
     }
 
-    const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, energy, price from trade
+    const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price from trade
 where "cellId" = ${userCell.id}
-and date_trunc('day', now()) < time
+and date_trunc('day', now()) - '8 hour'::interval < time
 order by 1;`)
-    const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price from trade
+    const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price from trade
 where "cellId" = ${userCell.id}
 and now() - '30 day'::interval < time
 group by date(time)
 order by 1;`)
-    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, energy, price
+    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
            from trade
            where "cellId" = ${userCell.id}
-             and date_trunc('day', now()) < time
+             and date_trunc('day', now()) - '8 hour'::interval < time
            order by 1)
 select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
        max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
 from t;`)
 
-    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
            from trade
            where "cellId" = ${userCell.id}
              and now() - '30 day'::interval < time
@@ -479,7 +479,7 @@ from t;`)
                      join cell c on transaction."fromId" = c.id
             where ("fromId" = ${cell.id}
                or "toId" = ${cell.id})
-                and date_trunc('day', now()) < time
+                and date_trunc('day', now()) - '8 hour'::interval < time
                 and time <= now()
             group by c.name)
 select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
@@ -512,27 +512,27 @@ from cell join t1 on total = cell.name;`)
       }
     })
 
-    const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, energy, price
+    const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price
 from trade
 where "cellId" = ${userCell.id}
-  and date_trunc('day', now()) < time
+  and date_trunc('day', now()) - '8 hour'::interval < time
 order by 1;`)
-    const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where "cellId" = ${userCell.id}
   and now() - '30 day'::interval < time
 group by date(time)
 order by 1;`)
-    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) at time zone 'Asia/Singapore' as time, energy, price
+    const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
            from trade
            where "cellId" = ${userCell.id}
-             and date_trunc('day', now()) < time
+             and date_trunc('day', now()) - '8 hour'::interval < time
            order by 1)
 select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
        max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
 from t;`)
 
-    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) at time zone 'Asia/Singapore' as time, sum(energy) as energy, avg(price) as price
+    const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
            from trade
            where "cellId" = ${userCell.id}
              and now() - '30 day'::interval < time
@@ -589,17 +589,17 @@ from t;`)
         ethAddress: cellEthAddress
       }
     })
-    const transactions_today = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
+    const transactions_today = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
        price,
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where date_trunc('day', now()) < time
+where date_trunc('day', now()) - '8 hour'::interval < time
 and ("fromId"=${myCell.id} or "toId"=${myCell.id})
 order by time desc;`)
-    const transactions_30_days = await this.transactionRepository.query(`select time at time zone 'Asia/Singapore' as time,
+    const transactions_30_days = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
        price,
