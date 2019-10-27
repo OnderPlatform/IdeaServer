@@ -227,6 +227,8 @@ export class AMIGO extends NodeDatabaseRepositories {
   round_time(time: string): string {
     const date = new Date(time)
     date.setMinutes( Math.round(date.getMinutes()/15)*15 )
+    date.setSeconds(0)
+    date.setMilliseconds(0)
     return date.toISOString()
   }
 
