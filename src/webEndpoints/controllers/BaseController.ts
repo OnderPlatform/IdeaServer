@@ -396,6 +396,11 @@ export class BaseController {
               ctx.response.status = 200
               break;
             }
+            case "operator": {
+              ctx.response.body = await this.db.service.reidsUI.operatorConsumption(discoveringuser)
+              ctx.response.status = 200
+              break;
+            }
             case "prosumer":
             default: {
               this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
@@ -456,6 +461,11 @@ export class BaseController {
             case "producer":
             case "prosumer": {
               ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser)
+              ctx.response.status = 200
+              break
+            }
+            case "operator": {
+              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser)
               ctx.response.status = 200
               break
             }

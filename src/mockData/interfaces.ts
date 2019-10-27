@@ -259,6 +259,23 @@ export interface UserMargin {
   margin: number
 }
 
+export interface OperatorConsumption {
+  "peers_today": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    // "bought": number,
+    "price": number
+  }>
+  "peers_30_days": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    // "bought": number,
+    "price": number
+  }>
+}
+
 export interface UserConsumption {
   today: {
     "minEnergy": number,
@@ -304,6 +321,21 @@ export interface UserConsumption {
     "id": string,
     "balance": number,
     "bought": number,
+    "price": number
+  }>
+}
+
+export interface OperatorProduction {
+  "peers_today": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "price": number
+  }>
+  "peers_30_days": Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
     "price": number
   }>
 }

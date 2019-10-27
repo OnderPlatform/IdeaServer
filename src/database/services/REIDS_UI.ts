@@ -2,7 +2,7 @@ import {
   AdminAnchor,
   AdminConsumptions,
   AdminProductions,
-  Authorization, Transaction,
+  Authorization, OperatorConsumption, OperatorProduction, Transaction,
   UserAnchor,
   UserConsumption,
   UserMargin,
@@ -357,6 +357,36 @@ where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now() - '30 day'::interva
 group by c.name, c."ethAddress"
 order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
+  }
+
+  async operatorConsumption(cellEthAddress: string): Promise<OperatorConsumption | {}> {
+    const cell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+    const peers_today = await this.getConsumptionPeersForToday(cell)
+    const peers_30_days = await this.getConsumptionPeersFor30Day(cell)
+
+    return {
+      peers_today: peers_today.map(value => ({...value, bought: undefined})),
+      peers_30_days: peers_30_days.map(value => ({...value, bought: undefined})),
+    }
+  }
+
+  async operatorProduction(cellEthAddress: string): Promise<OperatorProduction| {}> {
+    const cell = await this.cellRepository.findOneOrFail({
+      where: {
+        ethAddress: cellEthAddress
+      }
+    })
+    const peers_today = await this.getProductionPeersToday(cell)
+    const peers_30_days = await this.getProductionPeers30Day(cell)
+
+    return {
+      peers_today: peers_today.map(value => ({...value, bought: undefined})),
+      peers_30_days: peers_30_days.map(value => ({...value, bought: undefined})),
+    }
   }
 
   async userConsumption(cellEthAddress: string, period?: string): Promise<UserConsumption | {}> {
