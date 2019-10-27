@@ -604,7 +604,7 @@ export class AMIGO extends NodeDatabaseRepositories {
 
         const S5 = S6 * lastConsumerInTradeTable.energy / S3
 
-        const cost = (consumerTrade.pay - S5) * (1 - operator.opCoef / 100) * (producerTrade.energy / S1)
+        const cost = Math.abs(consumerTrade.pay - S5) * (1 - operator.opCoef / 100) * (producerTrade.energy / S1)
         const price = consumerTrade.price
 
         if (price) {
