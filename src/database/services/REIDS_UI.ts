@@ -210,7 +210,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: 0}),
+      }).concat({date: this.getTomorrowSingapore(), price: entitiesToday[-1].price}),
       price_30_day: entities30Today.map(value => {
         if (typeof value.price != "number")
           throw new Error('price is null')
@@ -301,7 +301,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: 0}),
+      }).concat({date: this.getTomorrowSingapore(), price: entitiesToday[-1].price}),
       price_30_day: entities30Today.map(value => {
         return {
           date: value.time,
@@ -469,7 +469,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: 0}),
+      }).concat({date: this.getTomorrowSingapore(), price: userTradeTable1Day[-1].price}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -585,7 +585,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: 0}),
+      }).concat({date: this.getTomorrowSingapore(), price: userTradeTable1Day[-1].price}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
