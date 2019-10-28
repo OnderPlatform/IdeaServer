@@ -134,11 +134,11 @@ from t1
     now = new Date(now.toISOString())
     now.setHours(now.getHours()+8)
     now.setDate(now.getDate()+1)
-    now.setHours(now.getHours()-8)
     now.setHours(0)
     now.setMinutes(0)
     now.setSeconds(0)
     now.setMilliseconds(0)
+    now.setHours(now.getHours()-8)
     return now
   }
 
@@ -194,7 +194,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 1000}),
+      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
       energy_30_day: entities30Today.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
@@ -210,7 +210,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), price: 0}),
       price_30_day: entities30Today.map(value => {
         if (typeof value.price != "number")
           throw new Error('price is null')
@@ -289,7 +289,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
       energy_30_day: entities30Today.map(value => {
         return {
           date: value.time,
@@ -301,7 +301,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), price: 0}),
       price_30_day: entities30Today.map(value => {
         return {
           date: value.time,
@@ -457,7 +457,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
       energy_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -469,7 +469,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), price: 0}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -573,7 +573,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
       energy_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -585,7 +585,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }),
+      }).concat({date: this.getTomorrowSingapore(), price: 0}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
