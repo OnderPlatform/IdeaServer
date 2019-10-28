@@ -131,6 +131,7 @@ from t1
 
   getTomorrowSingapore() {
     let now = new Date()
+    now = new Date(now.toISOString())
     now.setHours(now.getHours()+8)
     now.setDate(now.getDate()+1)
     now.setHours(0)
@@ -192,7 +193,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
+      }).concat({date: this.getTomorrowSingapore(), energy: 1}),
       energy_30_day: entities30Today.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
