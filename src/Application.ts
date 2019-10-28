@@ -44,9 +44,16 @@ export default class Application {
     await this.db.service.amigo.start()
     this.db.service.mqtt.mqtt_cl.add_handler((value: string, message: string) => this.db.service.mqtt.newTransactionStateFromMQTT(value, message))
     this.db.service.mqtt.mqtt_cl.start()
+
     // console.log("post data cron")
     // this.postData()
     // this.fetchingData()
+    const user = await this.db.service.repositories.userRepository.findOneOrFail({
+      where: {
+        id: 4
+      }
+    })
+    await this.db.service.notarization.addAnchoringDataToServer(await this.db.service.notarization.getAnchoringDataForUser(user), user)
 
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
