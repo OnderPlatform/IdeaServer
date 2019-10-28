@@ -134,6 +134,7 @@ from t1
     now = new Date(now.toISOString())
     now.setHours(now.getHours()+8)
     now.setDate(now.getDate()+1)
+    now.setHours(now.getHours()-8)
     now.setHours(0)
     now.setMinutes(0)
     now.setSeconds(0)
@@ -193,7 +194,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 1}),
+      }).concat({date: this.getTomorrowSingapore(), energy: 1000}),
       energy_30_day: entities30Today.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
