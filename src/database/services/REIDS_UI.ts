@@ -129,6 +129,16 @@ from t1
          join cell on t1.total = cell.name;`)
   }
 
+  getTomorrow() {
+    let now = new Date()
+    now.setDate(now.getDate()+1)
+    now.setHours(0)
+    now.setMinutes(0)
+    now.setSeconds(0)
+    now.setMilliseconds(0)
+    return now
+  }
+
   async adminConsumptions(): Promise<AdminConsumptions> {
     const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
@@ -136,6 +146,7 @@ where type = 'consumer'
   and date_trunc('day', now()) - '8 hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1;`)
+
 
     const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
@@ -180,7 +191,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }),
+      }).concat({date: this.getTomorrow(), energy: 0}),
       energy_30_day: entities30Today.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
