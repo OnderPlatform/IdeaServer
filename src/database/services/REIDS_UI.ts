@@ -2,7 +2,10 @@ import {
   AdminAnchor,
   AdminConsumptions,
   AdminProductions,
-  Authorization, OperatorConsumption, OperatorProduction, Transaction,
+  Authorization,
+  OperatorConsumption,
+  OperatorProduction,
+  Transaction,
   UserAnchor,
   UserConsumption,
   UserMargin,
@@ -10,7 +13,6 @@ import {
   UserProduction,
   UserTransactions
 } from "../../mockData/interfaces";
-import { Raw } from "typeorm";
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 import { Cell } from "../models";
 
@@ -210,7 +212,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: entitiesToday[-1].price}),
+      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today.averagePrice}),
       price_30_day: entities30Today.map(value => {
         if (typeof value.price != "number")
           throw new Error('price is null')
@@ -301,7 +303,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: entitiesToday[-1].price}),
+      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today.averagePrice}),
       price_30_day: entities30Today.map(value => {
         return {
           date: value.time,
@@ -469,7 +471,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: userTradeTable1Day[-1].price}),
+      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today.averagePrice}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -585,7 +587,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: userTradeTable1Day[-1].price}),
+      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today.averagePrice}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
