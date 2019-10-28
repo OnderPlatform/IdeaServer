@@ -48,12 +48,6 @@ export default class Application {
     // console.log("post data cron")
     // this.postData()
     // this.fetchingData()
-    const user = await this.db.service.repositories.userRepository.findOneOrFail({
-      where: {
-        id: 4
-      }
-    })
-    await this.db.service.notarization.addAnchoringDataToServer(await this.db.service.notarization.getAnchoringDataForUser(user), user)
 
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
@@ -61,7 +55,7 @@ export default class Application {
       console.log("fetch data cron")
       this.fetchingData()
     });
-    cron.schedule("00 00 * * *", () => {
+    cron.schedule("01 00 * * *", () => {
       console.log("post data cron")
       this.postData()
     })
