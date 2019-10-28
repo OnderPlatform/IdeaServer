@@ -129,8 +129,9 @@ from t1
          join cell on t1.total = cell.name;`)
   }
 
-  getTomorrow() {
+  getTomorrowSingapore() {
     let now = new Date()
+    now.setHours(now.getHours()+8)
     now.setDate(now.getDate()+1)
     now.setHours(0)
     now.setMinutes(0)
@@ -191,7 +192,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrow(), energy: 0}),
+      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
       energy_30_day: entities30Today.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
