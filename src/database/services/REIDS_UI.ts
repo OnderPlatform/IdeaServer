@@ -35,7 +35,7 @@ export class REIDS_UI extends NodeDatabaseRepositories {
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where date_trunc('day', now()) - '8 hour'::interval < time
+where date_trunc('day', now()) - '8 hour'::interval <= time
 order by time desc;`)
     console.log(transactions_today);
 
@@ -46,7 +46,7 @@ order by time desc;`)
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where now() - '30 day'::interval < time
+where now() - '30 day'::interval <= time
 order by time desc;`)
 
     return {
@@ -66,7 +66,7 @@ order by time desc;`)
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."fromId" = c.id
-      and time < now() and date_trunc('day', now()) - '8 hour'::interval < time
+      and time < now() and date_trunc('day', now()) - '8 hour'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
@@ -84,7 +84,7 @@ from t1
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."fromId" = c.id
-      and time < now() and now() - '30 day'::interval < time
+      and time < now() and now() - '30 day'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
@@ -103,7 +103,7 @@ from t1
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."toId" = c.id
-      and time < now() and date_trunc('day', now()) - '8 hour'::interval < time
+      and time < now() and date_trunc('day', now()) - '8 hour'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
@@ -121,7 +121,7 @@ from t1
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."toId" = c.id
-      and time < now() and now() - '30 day'::interval < time
+      and time < now() and now() - '30 day'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
@@ -133,21 +133,21 @@ from t1
     const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and date_trunc('day', now()) - '8 hour'::interval < time
+  and date_trunc('day', now()) - '8 hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1;`)
 
     const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and now() - '30 day'::interval < time
+  and now() - '30 day'::interval <= time
 group by date(time)
 order by 1;`)
 
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and date_trunc('day', now()) - '8 hour'::interval < time
+  and date_trunc('day', now()) - '8 hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1)
 select min(t.energy) as "minEnergy", max(t.energy) as "maxEnergy", avg(t.energy) as "averageEnergy",
@@ -157,7 +157,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and now() - '30 day'::interval < time
+  and now() - '30 day'::interval <= time
 group by date(time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -225,20 +225,20 @@ from t;`)
     const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
-  and date_trunc('day', now()) - '8 hour'::interval < time
+  and date_trunc('day', now()) - '8 hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1;`)
     const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
-  and now() - '30 day'::interval < time
+  and now() - '30 day'::interval <= time
 group by date(time)
 order by 1;`)
 
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
-  and date_trunc('day', now()) - '8 hour'::interval < time
+  and date_trunc('day', now()) - '8 hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -251,7 +251,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
-  and now() - '30 day'::interval < time
+  and now() - '30 day'::interval <= time
 group by date(time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -339,7 +339,7 @@ from t;`)
     "price": number
   }>> {
     return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
-where ("fromId" = ${cell.id} or "toId"=${cell.id}) and date_trunc('day', now()) - '8 hour'::interval < time
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and date_trunc('day', now()) - '8 hour'::interval <= time
 group by c.name, c."ethAddress"
 order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
@@ -353,7 +353,7 @@ order by c.name)
     "price": number
   }>> {
     return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
-where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now() - '30 day'::interval < time
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now() - '30 day'::interval <= time
 group by c.name, c."ethAddress"
 order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
@@ -401,17 +401,17 @@ order by c.name)
 
     const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price from trade
 where "cellId" = ${userCell.id}
-and date_trunc('day', now()) - '8 hour'::interval < time
+and date_trunc('day', now()) - '8 hour'::interval <= time
 order by 1;`)
     const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price from trade
 where "cellId" = ${userCell.id}
-and now() - '30 day'::interval < time
+and now() - '30 day'::interval <= time
 group by date(time)
 order by 1;`)
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
            from trade
            where "cellId" = ${userCell.id}
-             and date_trunc('day', now()) - '8 hour'::interval < time
+             and date_trunc('day', now()) - '8 hour'::interval <= time
            order by 1)
 select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
        max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
@@ -420,7 +420,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
            from trade
            where "cellId" = ${userCell.id}
-             and now() - '30 day'::interval < time
+             and now() - '30 day'::interval <= time
            group by date(time)
            order by 1)
 select min(energy) as "minEnergy",
@@ -479,7 +479,7 @@ from t;`)
                      join cell c on transaction."fromId" = c.id
             where ("fromId" = ${cell.id}
                or "toId" = ${cell.id})
-                and date_trunc('day', now()) - '8 hour'::interval < time
+                and date_trunc('day', now()) - '8 hour'::interval <= time
                 and time <= now()
             group by c.name)
 select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
@@ -498,7 +498,7 @@ from cell join t1 on total = cell.name;`)
                      join cell c on transaction."fromId" = c.id
             where ("fromId" = ${cell.id}
                or "toId" = ${cell.id})
-                and now() - '30 day'::interval < time
+                and now() - '30 day'::interval <= time
                 and time <= now()
             group by c.name)
 select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
@@ -515,18 +515,18 @@ from cell join t1 on total = cell.name;`)
     const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price
 from trade
 where "cellId" = ${userCell.id}
-  and date_trunc('day', now()) - '8 hour'::interval < time
+  and date_trunc('day', now()) - '8 hour'::interval <= time
 order by 1;`)
     const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where "cellId" = ${userCell.id}
-  and now() - '30 day'::interval < time
+  and now() - '30 day'::interval <= time
 group by date(time)
 order by 1;`)
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
            from trade
            where "cellId" = ${userCell.id}
-             and date_trunc('day', now()) - '8 hour'::interval < time
+             and date_trunc('day', now()) - '8 hour'::interval <= time
            order by 1)
 select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
        max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
@@ -535,7 +535,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
            from trade
            where "cellId" = ${userCell.id}
-             and now() - '30 day'::interval < time
+             and now() - '30 day'::interval <= time
            group by date(time)
            order by 1)
 select min(energy) as "minEnergy",
@@ -596,7 +596,7 @@ from t;`)
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where date_trunc('day', now()) - '8 hour'::interval < time
+where date_trunc('day', now()) - '8 hour'::interval <= time
 and ("fromId"=${myCell.id} or "toId"=${myCell.id})
 order by time desc;`)
     const transactions_30_days = await this.transactionRepository.query(`select time as time,
@@ -606,7 +606,7 @@ order by time desc;`)
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where now() - '30 day'::interval < time
+where now() - '30 day'::interval <= time
 and ("fromId"=${myCell.id} or "toId"=${myCell.id})
 order by time desc;`)
 
