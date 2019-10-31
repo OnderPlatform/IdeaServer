@@ -52,16 +52,16 @@ export default class Application {
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
 
     cron.schedule('0 */15 * * * *', () => {
-      // console.log("fetch data cron")
-      // this.fetchingData()
+      console.log("fetch data cron")
+      this.fetchingData()
     });
     cron.schedule("01 00 * * *", () => {
-      // console.log("post data cron")
-      // this.postData()
+      console.log("post data cron")
+      this.postData()
     })
     cron.schedule('*/5 * * * * *', () => {
-      // console.log('Sending progress to mqtt')
-      // this.sendProgress()
+      console.log('Sending progress to mqtt')
+      this.sendProgress()
     })
   }
 }
