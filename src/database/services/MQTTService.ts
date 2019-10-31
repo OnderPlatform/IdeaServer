@@ -48,7 +48,7 @@ export class MQTTService extends NodeDatabaseRepositories {
         const nodeNumer: number = +nodeNumerArray[0]
         try {
           await this.cellRepository.update({
-            ethAddress: EthAddresses[nodeNumer],
+            ethAddress: EthAddresses[nodeNumer-1],
           }, {
             balance: JSON.parse(message).value
           })
@@ -126,9 +126,9 @@ export class MQTTService extends NodeDatabaseRepositories {
       throw new Error('no digits in mqttAlias of node')
 
     // @ts-ignore
-    this.mqtt_cl.publishProgress(+newTransaction.from.mqttAlias.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.mqttAlias, newTransaction.to.mqttAlias, newTransaction.price, newTransaction.cost)
+    this.mqtt_cl.publishProgress(+newTransaction.from.mqttAlias.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.to.mqttAlias, newTransaction.from.mqttAlias, newTransaction.price, newTransaction.amount)
     // @ts-ignore
-    this.mqtt_cl.publishProgress(+newTransaction.to.mqttAlias.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.from.mqttAlias, newTransaction.to.mqttAlias, newTransaction.price, newTransaction.cost)
+    this.mqtt_cl.publishProgress(+newTransaction.to.mqttAlias.match(/\d+/)[0], 1, newTransaction.amount, newTransaction.to.mqttAlias, newTransaction.from.mqttAlias, newTransaction.price, newTransaction.amount)
 
     await this.transactionRepository.update({
       id: newTransaction.id

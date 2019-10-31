@@ -34,9 +34,28 @@ export class AMIGO extends NodeDatabaseRepositories {
     if (!cells.length) {
       await this.fetchInitialDataFromAMIGO()
       await this.initialDataForOperator()
+      await this.addAdmin()
       // await this.db.service.initMockData()
     }
 
+  }
+
+  async addAdmin() {
+    await this.cellRepository.insert({
+      ethAddress: "ADMIN",
+      type: "admin",
+      mrid: 'admin',
+      name: "Admin"
+    })
+
+    await this.userRepository.insert({
+      isAdmin: true,
+      email: 'admin@email.com',
+      cell: {
+        ethAddress: "ADMIN"
+      },
+      password: '123456789'
+    })
   }
 
   async fetchAndHandleDataFromAMIGO() {
@@ -170,21 +189,21 @@ export class AMIGO extends NodeDatabaseRepositories {
       prosumers: prosumers.map((value, index) => {
         return {
           name: value.name,
-          ethAddress: initialMockData.prosumers[index].ethAddress,
+          ethAddress: value.mrid,
           mrid: value.mrid
         }
       }),
       producers: producers.map((value, index) => {
         return {
           name: value.name,
-          ethAddress: initialMockData.producers[index].ethAddress,
+          ethAddress: value.mrid,
           mrid: value.mrid
         }
       }),
       consumers: consumers.map((value, index) => {
         return {
           name: value.name,
-          ethAddress: initialMockData.consumers[index].ethAddress,
+          ethAddress: value.mrid,
           mrid: value.mrid
         }
       })
@@ -197,7 +216,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         ethAddress: value.ethAddress,
         type: 'consumer',
         name: value.name,
-        mrid: value.mrid
+        mrid: value.mrid,
       })
     }))
 
@@ -208,7 +227,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         type: 'producer',
         initPower: DEFAULT_INITPOWER,
         initPrice: DEFAULT_INITPRICE,
-        mrid: value.mrid
+        mrid: value.mrid,
       })
     }))
 
@@ -218,7 +237,7 @@ export class AMIGO extends NodeDatabaseRepositories {
         type: 'prosumer',
         ethAddress: value.ethAddress,
         margin: DEFAULT_MARGIN,
-        mrid: value.mrid
+        mrid: value.mrid,
       })
     }))
 
