@@ -37,15 +37,15 @@ private started: number
     // reconnectPeriod: 1000,
     // rejectUnauthorized: false,
     // protocol: 'mqtt_cl'
-    port: 8883,
+    port: 8083,
     host: "mosquitto.onder.tech",
     clientId: makeid(20),
-    username: "test",
-    password: "123456",
+    username: "imseller",
+    password: "C65A29d416FF8",
     keepalive: 60,
     reconnectPeriod: 1000,
     rejectUnauthorized: false,
-    protocol: 'mqtts'
+    protocol: 'mqtt'
     }
     this.started = 0
   }
