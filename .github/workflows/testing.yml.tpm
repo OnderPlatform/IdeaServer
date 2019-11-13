@@ -1,0 +1,34 @@
+name: Testing
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10.x]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: yarn bootstrap
+        env:
+          CI: true
+      - name: Compile
+        run: yarn build
+        env:
+          CI: true
+      - name: Test
+        run: yarn test
+        env:
+          NO_GAS_REPORT: true
+          CI: true
+      - name: Lint
+        run: yarn lint
+

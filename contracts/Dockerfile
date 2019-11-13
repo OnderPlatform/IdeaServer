@@ -1,13 +1,18 @@
-ARG builder
-
-FROM ${builder} as builder
 FROM node:lts
 
-ARG yarnrc="/usr/local/share/.yarnrc"
+WORKDIR /opt
 
-COPY --from=builder ${yarnrc} ${yarnrc}
-COPY --from=builder /opt /opt
+COPY . .
+RUN mkdir config && cp config.json config/config.json
+ARG OFFLINE_CACHE="/opt/yarn-offline-cache"
 
-WORKDIR /opt/packages/contracts
+RUN yarn config set yarn-offline-mirror ${OFFLINE_CACHE} && \
+    yarn config set yarn-offline-mirror-pruning true
 
-EXPOSE 9005
+RUN yarn install --pure-lockfile&&\
+    yarn build
+
+EXPOSE 9505
+# CMD [ "tail", "-f", "/dev/null" ]
+# CMD ["/bin/bash", "tail -f /dev/null"]
+CMD [ "/usr/local/bin/node", "/opt/dist/bin/main.js", "--config", "/opt/config/config.json" ]
