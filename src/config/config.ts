@@ -1,12 +1,12 @@
 export default {
   adminSecret: "admin",
-  notarizationUrl: "localhost",
+  notarizationUrl: "reidsco-service",
   notarizationPort: "9505",
   serverUrl: "0.0.0.0",
   serverPort: 8888,
-  hostDB: "localhost",
+  hostDB: "postgres-service",
   portDB: 5432,
-  usernameDB: "postgres",
-  passwordDB: "postgres",
+  usernameDB: "server",
+  passwordDB: "server123",
   databaseName: "ideaserver"
 }
