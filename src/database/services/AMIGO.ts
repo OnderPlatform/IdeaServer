@@ -720,7 +720,7 @@ export class AMIGO extends NodeDatabaseRepositories {
     }))
   }
 
-  async postPricesToAMIGOForCell(ethAddress: string, purposeKey?: string, timeStamp: string = (new Date()).toISOString()) {
+  async postPricesToAMIGOForCell(ethAddress: string, purposeKey: string = 'FACT', timeStamp: string = (new Date()).toISOString()) {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: ethAddress
@@ -736,7 +736,7 @@ export class AMIGO extends NodeDatabaseRepositories {
     })
 
     const cellAMIGOType = converCellTypeToAMIGOCellType(cell.type)
-    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/cost/row?purposeKey=FACT`
+    const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/cost/row?purposeKey=${purposeKey}`
     if (typeof cell.initPrice != 'object')
       throw new Error('initPrice is not an object')
     try {
