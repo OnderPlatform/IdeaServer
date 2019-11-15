@@ -742,7 +742,7 @@ export class AMIGO extends NodeDatabaseRepositories {
     try {
       switch (cellAMIGOType) {
         case "generatingUnit": {
-          const response = await axios.post(url, cell.initPrice.map(initPriceValue => ({
+          const newPrices: CellRealData[] = cell.initPrice.map(initPriceValue => ({
             timeStamp,
             measurementValueQuality:
               {
@@ -750,13 +750,15 @@ export class AMIGO extends NodeDatabaseRepositories {
                 source: "DERIVED"
               },
             value: initPriceValue
-          })))
+          }));
+          console.log(`Posting price for generatingUnit: ${newPrices}`);
+          const response = await axios.post(url, newPrices)
           // console.log(response.data);
           break;
         }
         case "energyConsumer":
         case "energyStoragingUnit": {
-          const response = await axios.post(url, [{
+          const newPrices: CellRealData[] = [{
             timeStamp: lastTradeEntry.time,
             measurementValueQuality:
               {
@@ -764,7 +766,9 @@ export class AMIGO extends NodeDatabaseRepositories {
                 source: "DERIVED"
               },
             value: lastTradeEntry.price
-          }])
+          }];
+          console.log(`Posting price for ${cellAMIGOType}: ${newPrices}`);
+          const response = await axios.post(url, newPrices);
           // console.log(response.data);
           break;
         }
