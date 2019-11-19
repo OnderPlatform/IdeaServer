@@ -405,7 +405,7 @@ order by c.name)
     }
   }
 
-  async userConsumption(cellEthAddress: string, period?: string): Promise<UserConsumption | {}> {
+  async userConsumption(cellEthAddress: string, balance: boolean = true): Promise<UserConsumption | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -447,6 +447,8 @@ select min(energy) as "minEnergy",
        avg(price)  as "averagePrice"
 from t;`)
 
+
+
     return {
       today: {
         ...minMaxAvg_today[0],
@@ -478,8 +480,8 @@ from t;`)
           price: value.price
         }
       }),
-      peers_today: await this.getConsumptionPeersForToday(userCell),
-      peers_30_days: await this.getConsumptionPeersFor30Day(userCell),
+      peers_today: (await this.getConsumptionPeersForToday(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
+      peers_30_days: (await this.getConsumptionPeersFor30Day(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
     }
   }
 
@@ -521,7 +523,7 @@ select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
 from cell join t1 on total = cell.name;`)
   }
 
-  async userProduction(cellEthAddress: string, period?: string): Promise<UserProduction | {}> {
+  async userProduction(cellEthAddress: string, balance: boolean = true): Promise<UserProduction | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -594,8 +596,8 @@ from t;`)
           price: value.price
         }
       }),
-      peers_today: await this.getProductionPeersToday(userCell),
-      peers_30_days: await this.getProductionPeers30Day(userCell)
+      peers_today: (await this.getProductionPeersToday(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
+      peers_30_days: (await this.getProductionPeers30Day(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
     }
   }
 

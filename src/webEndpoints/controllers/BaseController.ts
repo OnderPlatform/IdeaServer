@@ -415,7 +415,7 @@ export class BaseController {
         })
         switch (cell.type) {
           case "consumer": {
-            ctx.response.body = await this.db.service.reidsUI.userConsumption(who)
+            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false)
             ctx.response.status = 200
             break;
           }
@@ -483,7 +483,7 @@ export class BaseController {
         switch (cell.type) {
           case "producer":
           case "prosumer": {
-            ctx.response.body = await this.db.service.reidsUI.userProduction(who)
+            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false)
             ctx.response.status = 200
             break
           }

@@ -10,11 +10,7 @@ import {
   ProsumerData
 } from "../../mockData/interfaces";
 import { EthAddresses, initialMockData } from "../../mockData/config";
-import {
-  converCellTypeToAMIGOCellType,
-  mapCellTypeToEndpoint,
-  mapCellTypeToPurposeKey
-} from "../../utils/mapCellTypes";
+import { converCellTypeToAMIGOCellType } from "../../utils/mapCellTypes";
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 import { In } from "typeorm";
 
@@ -28,6 +24,12 @@ export class AMIGO extends NodeDatabaseRepositories {
 
   constructor() {
     super()
+  }
+
+  addSeconds(date: Date, seconds: number): Date {
+    let newDate = new Date(date)
+    newDate.setSeconds(date.getSeconds() + seconds)
+    return newDate
   }
 
   async start() {
@@ -742,8 +744,8 @@ export class AMIGO extends NodeDatabaseRepositories {
     try {
       switch (cellAMIGOType) {
         case "generatingUnit": {
-          const newPrices: CellRealData[] = cell.initPrice.map(initPriceValue => ({
-            timeStamp,
+          const newPrices: CellRealData[] = cell.initPrice.map((initPriceValue, index) => ({
+            timeStamp: this.addSeconds(new Date(timeStamp), index).toISOString(),
             measurementValueQuality:
               {
                 validity: "GOOD",
@@ -751,7 +753,7 @@ export class AMIGO extends NodeDatabaseRepositories {
               },
             value: initPriceValue
           }));
-          console.log(`Posting price for generatingUnit: ${newPrices}`);
+          console.log(`Posting price for generatingUnit: ${JSON.stringify(newPrices)}`);
           const response = await axios.post(url, newPrices)
           // console.log(response.data);
           break;
