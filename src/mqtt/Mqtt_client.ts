@@ -37,8 +37,8 @@ private started: number
     // reconnectPeriod: 1000,
     // rejectUnauthorized: false,
     // protocol: 'mqtt_cl'
-    port: 8083,
-    host: "mosquitto.onder.tech",
+    port: 1883,
+    host: "mosquitto-service",
     clientId: makeid(20),
     username: "imseller",
     password: "C65A29d416FF8",
