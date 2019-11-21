@@ -49,13 +49,13 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
     header,
   ];
   transactions.transaction_today.forEach(value => {
-    rowsInsert_today.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
+    rowsInsert_today.push([`${value.time}`, `${value.from}`, `${value.to}`, `${(value.price).toString().replace('.', ',')}`, `${value.transfer_energy.toString().replace('.', ',')}`, `${value.transfer_coin.toString().replace('.', ',')}`])
   })
   let rowsInsert_30_days = [
     header,
   ];
   transactions.transaction_30_days.forEach(value => {
-    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
+    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price.toString().replace('.', ',')}`, `${value.transfer_energy.toString().replace('.', ',')}`, `${value.transfer_coin.toString().replace('.', ',')}`])
   })
 
   const options = {
