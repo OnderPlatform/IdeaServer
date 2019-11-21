@@ -49,7 +49,10 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
     header,
   ];
   transactions.transaction_today.forEach(value => {
-    rowsInsert_today.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
+    rowsInsert_today.push(
+    // @ts-ignore
+      [`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`].map((value1, index) => (index >= 3) ? ({t: 'n', v: value1}) : value1)
+    )
   })
   let rowsInsert_30_days = [
     header,
@@ -57,10 +60,6 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
   transactions.transaction_30_days.forEach(value => {
     rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
   })
-  rowsInsert_today.map((value, i) => (i >= 3) ? ({
-    z: value,
-    t: 'n'
-  }) : value )
 
 
   const options = {
