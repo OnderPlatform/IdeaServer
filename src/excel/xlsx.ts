@@ -49,14 +49,19 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
     header,
   ];
   transactions.transaction_today.forEach(value => {
-    rowsInsert_today.push([`${value.time}`, `${value.from}`, `${value.to}`, `${(value.price).toString().replace('.', ',')}`, `${value.transfer_energy.toString().replace('.', ',')}`, `${value.transfer_coin.toString().replace('.', ',')}`])
+    rowsInsert_today.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
   })
   let rowsInsert_30_days = [
     header,
   ];
   transactions.transaction_30_days.forEach(value => {
-    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price.toString().replace('.', ',')}`, `${value.transfer_energy.toString().replace('.', ',')}`, `${value.transfer_coin.toString().replace('.', ',')}`])
+    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
   })
+  rowsInsert_today.map((value, i) => (i >= 3) ? ({
+    v: value,
+    t: 'n'
+  }) : value )
+
 
   const options = {
     '!cols':
@@ -66,6 +71,7 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
         { wch: 20 },
       ],
   };
+
 
   const buffer = xlsx.build([{ name: 'Today', data: rowsInsert_today }, {name: '30 days', data: rowsInsert_30_days}], options);
   fs.writeFileSync('./result.xlsx', buffer);
