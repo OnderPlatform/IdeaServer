@@ -58,7 +58,7 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
     rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
   })
   rowsInsert_today.map((value, i) => (i >= 3) ? ({
-    v: value,
+    z: value,
     t: 'n'
   }) : value )
 
