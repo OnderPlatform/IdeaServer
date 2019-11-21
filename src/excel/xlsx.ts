@@ -51,14 +51,15 @@ export function parseTransactionsToExcel(transactions: UserTransactions) {
   transactions.transaction_today.forEach(value => {
     rowsInsert_today.push(
     // @ts-ignore
-      [`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`].map((value1, index) => (index >= 3) ? ({t: 'n', v: value1}) : value1)
+      [`${value.time}`, `${value.from}`, `${value.to}`, value.price, value.transfer_energy, value.transfer_coin]
     )
   })
   let rowsInsert_30_days = [
     header,
   ];
   transactions.transaction_30_days.forEach(value => {
-    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, `${value.price}`, `${value.transfer_energy}`, `${value.transfer_coin}`])
+    // @ts-ignore
+    rowsInsert_30_days.push([`${value.time}`, `${value.from}`, `${value.to}`, value.price, value.transfer_energy, value.transfer_coin])
   })
 
 
