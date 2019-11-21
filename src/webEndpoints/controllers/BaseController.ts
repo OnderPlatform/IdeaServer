@@ -606,12 +606,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30))
         } else {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions())
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30))
         }
       } else {
-        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who))
+        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30))
       }
       ctx.response.status = 200
       ctx.response.body = {
