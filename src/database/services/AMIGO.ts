@@ -722,6 +722,36 @@ export class AMIGO extends NodeDatabaseRepositories {
     }))
   }
 
+  async sendMarginToAMIGO(ethAddress: string, purposeKey: string = 'FACT') {
+    try {
+      const cell = await this.cellRepository.findOneOrFail({
+        where: {
+          ethAddress: ethAddress
+        }
+      })
+      const cellAMIGOType = converCellTypeToAMIGOCellType(cell.type)
+      const url = `${AMIGO_SERVER}/api/${cellAMIGOType}/${ethAddress}/cost/row?purposeKey=${purposeKey}`
+
+      if (typeof cell.margin !== 'number') {
+        throw new Error('margin is not a number')
+      }
+
+      const newPrices: CellRealData[] = [{
+        timeStamp: Date.now().toString(),
+        measurementValueQuality:
+          {
+            validity: "GOOD",
+            source: "DERIVED"
+          },
+        value: cell.margin
+      }];
+      console.log(`Posting price for ${cellAMIGOType}: ${newPrices}`);
+      const response = await axios.post(url, newPrices);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
   async postPricesToAMIGOForCell(ethAddress: string, purposeKey: string = 'FACT', timeStamp: string = (new Date()).toISOString()) {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
@@ -758,8 +788,11 @@ export class AMIGO extends NodeDatabaseRepositories {
           // console.log(response.data);
           break;
         }
-        case "energyConsumer":
         case "energyStoragingUnit": {
+          await this.sendMarginToAMIGO(ethAddress, purposeKey);
+          break;
+        }
+        case "energyConsumer": {
           const newPrices: CellRealData[] = [{
             timeStamp: lastTradeEntry.time,
             measurementValueQuality:
