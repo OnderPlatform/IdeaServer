@@ -737,7 +737,7 @@ export class AMIGO extends NodeDatabaseRepositories {
       }
 
       const newPrices: CellRealData[] = [{
-        timeStamp: Date.now().toString(),
+        timeStamp: new Date().toISOString(),
         measurementValueQuality:
           {
             validity: "GOOD",
