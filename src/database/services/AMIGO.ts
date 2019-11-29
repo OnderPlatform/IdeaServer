@@ -789,7 +789,19 @@ export class AMIGO extends NodeDatabaseRepositories {
           break;
         }
         case "energyStoragingUnit": {
-          await this.sendMarginToAMIGO(ethAddress, purposeKey);
+          if (typeof cell.margin !== 'number')
+            throw new Error('margin is not a number')
+          const newPrices: CellRealData[] = [{
+            timeStamp: new Date().toISOString(),
+            measurementValueQuality:
+              {
+                validity: "GOOD",
+                source: "DERIVED"
+              },
+            value: cell.margin
+          }];
+          console.log(`Posting price for ${cellAMIGOType}: ${newPrices}`);
+          const response = await axios.post(url, newPrices);
           break;
         }
         case "energyConsumer": {
