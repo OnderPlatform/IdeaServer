@@ -159,8 +159,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
-    ctx.response.body = await this.db.service.reidsUI.adminTransactions(3, timezoneOffset)
+    ctx.response.body = await this.db.service.reidsUI.adminTransactions()
     ctx.response.status = 200
   }
 
@@ -169,8 +168,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
-    ctx.response.body = await this.db.service.reidsUI.adminConsumptions(3, timezoneOffset)
+    ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
     ctx.response.status = 200
   }
 
@@ -179,8 +177,7 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
-    ctx.response.body = await this.db.service.reidsUI.adminProductions(3, timezoneOffset)
+    ctx.response.body = await this.db.service.reidsUI.adminProductions()
     ctx.response.status = 200
   }
 
@@ -376,7 +373,6 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
     try {
       const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
@@ -396,7 +392,7 @@ export class BaseController {
           })
           switch (cell.type) {
             case "consumer": {
-              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser, true, 3, timezoneOffset)
+              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser)
               ctx.response.status = 200
               break;
             }
@@ -408,7 +404,7 @@ export class BaseController {
             }
           }
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminConsumptions(3, timezoneOffset)
+          ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
@@ -419,7 +415,7 @@ export class BaseController {
         })
         switch (cell.type) {
           case "consumer": {
-            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false, 3, timezoneOffset)
+            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false)
             ctx.response.status = 200
             break;
           }
@@ -440,7 +436,6 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
     try {
       const user = await this.db.service.repositories.userRepository.findOneOrFail({
         where: {
@@ -461,12 +456,12 @@ export class BaseController {
           switch (cell.type) {
             case "producer":
             case "prosumer": {
-              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser, true, 3, timezoneOffset)
+              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser)
               ctx.response.status = 200
               break
             }
             case "operator": {
-              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser, timezoneOffset)
+              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser)
               ctx.response.status = 200
               break
             }
@@ -476,7 +471,7 @@ export class BaseController {
             }
           }
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminProductions(timezoneOffset, timezoneOffset)
+          ctx.response.body = await this.db.service.reidsUI.adminProductions()
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
@@ -488,7 +483,7 @@ export class BaseController {
         switch (cell.type) {
           case "producer":
           case "prosumer": {
-            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false, 3, timezoneOffset)
+            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false)
             ctx.response.status = 200
             break
           }
@@ -509,7 +504,6 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.repositories.userRepository.findOneOrFail({
@@ -522,12 +516,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser, 3, timezoneOffset)
+          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser)
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminTransactions(3, timezoneOffset)
+          ctx.response.body = await this.db.service.reidsUI.adminTransactions()
         }
       } else {
-        ctx.response.body = await this.db.service.reidsUI.userTransactions(who, 3, timezoneOffset)
+        ctx.response.body = await this.db.service.reidsUI.userTransactions(who)
       }
 
 
@@ -600,7 +594,6 @@ export class BaseController {
     if (ctx.response.status == 401) {
       return
     }
-    const timezoneOffset = await this.db.service.reidsUI.findTimezoneOffsetRelativeToIP(ctx.request.ip)
     try {
       const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
       const user = await this.db.service.repositories.userRepository.findOneOrFail({
@@ -613,12 +606,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30, timezoneOffset))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30))
         } else {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30, timezoneOffset))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30))
         }
       } else {
-        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30, timezoneOffset))
+        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30))
       }
       ctx.response.status = 200
       ctx.response.body = {
