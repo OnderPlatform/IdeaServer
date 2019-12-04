@@ -15,6 +15,7 @@ import {
 } from "../../mockData/interfaces";
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 import { Cell } from "../models";
+import axios from 'axios';
 
 const DEFAULT_BALANCE = -1
 
@@ -25,11 +26,14 @@ interface GraphicEntry {
 }
 
 export class REIDS_UI extends NodeDatabaseRepositories {
+  private mapIPtoTimezoneOffset: Map<string, number>
+
   constructor() {
     super();
+    this.mapIPtoTimezoneOffset = new Map<string, number>()
   }
 
-  async adminTransactions(daysInterval: number = 3): Promise<UserTransactions> {
+  async adminTransactions(daysInterval: number = 3, timezoneOffset: number): Promise<UserTransactions> {
     const transactions_today: Transaction[] = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
@@ -37,7 +41,7 @@ export class REIDS_UI extends NodeDatabaseRepositories {
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+where date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 order by time desc;`)
     console.log(transactions_today);
 
@@ -48,7 +52,7 @@ order by time desc;`)
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+where now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 order by time desc;`)
 
     return {
@@ -57,7 +61,7 @@ order by time desc;`)
     }
   }
 
-  async getAdminConsumptionPeersToday(): Promise<Array<{
+  async getAdminConsumptionPeersToday(timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -68,25 +72,7 @@ order by time desc;`)
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."fromId" = c.id
-      and time < now()+'8 hour'::interval and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
-    group by c.name, c."ethAddress"
-    order by c.name)
-select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
-from t1
-         join cell on t1.total = cell.name;`)
-  }
-  async getAdminConsumptionPeers30Day(daysInterval: number = 3): Promise<Array<{
-    "total": string,
-    "id": string,
-    "balance": number,
-    "bought": number,
-    "price": number
-  }>> {
-    return await this.transactionRepository.query(`with t1 as (
-    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
-    from transaction
-             join cell c on transaction."fromId" = c.id
-      and time < now()+'8 hour'::interval and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+      and time < now()+'${timezoneOffset} hour'::interval and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
@@ -94,7 +80,26 @@ from t1
          join cell on t1.total = cell.name;`)
   }
 
-  async getAdminProductionPeersToday(): Promise<Array<{
+  async getAdminConsumptionPeers30Day(daysInterval: number = 3, timezoneOffset: number): Promise<Array<{
+    "total": string,
+    "id": string,
+    "balance": number,
+    "bought": number,
+    "price": number
+  }>> {
+    return await this.transactionRepository.query(`with t1 as (
+    select c.name as "total", sum(amount) as bought, sum(cost) as "price"
+    from transaction
+             join cell c on transaction."fromId" = c.id
+      and time < now()+'${timezoneOffset} hour'::interval and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
+    group by c.name, c."ethAddress"
+    order by c.name)
+select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
+from t1
+         join cell on t1.total = cell.name;`)
+  }
+
+  async getAdminProductionPeersToday(timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -105,14 +110,15 @@ from t1
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."toId" = c.id
-      and time < now()+'8 hour'::interval and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+      and time < now()+'${timezoneOffset} hour'::interval and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
 from t1
          join cell on t1.total = cell.name;`)
   }
-  async getAdminProductionPeers30Day(daysInterval: number = 3): Promise<Array<{
+
+  async getAdminProductionPeers30Day(daysInterval: number = 3, timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -123,7 +129,7 @@ from t1
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."toId" = c.id
-      and time < now()+'8 hour'::interval and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+      and time < now()+'${timezoneOffset} hour'::interval and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought as sold, t1.price
@@ -144,11 +150,11 @@ from t1
     return now
   }
 
-  async adminConsumptions(daysInterval: number = 3): Promise<AdminConsumptions> {
+  async adminConsumptions(daysInterval: number = 3, timezoneOffset: number): Promise<AdminConsumptions> {
     const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+  and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1;`)
 
@@ -156,14 +162,14 @@ order by 1;`)
     const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+  and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by date(time)
 order by 1;`)
 
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+  and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1)
 select min(t.energy) as "minEnergy", max(t.energy) as "maxEnergy", avg(t.energy) as "averageEnergy",
@@ -173,7 +179,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
-  and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+  and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by date(time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -232,29 +238,29 @@ from t;`)
       //     price: value.price
       //   }
       // })
-      peers_today: await this.getAdminConsumptionPeersToday(),
-      peers_30_days: await this.getAdminConsumptionPeers30Day(),
+      peers_today: await this.getAdminConsumptionPeersToday(timezoneOffset),
+      peers_30_days: await this.getAdminConsumptionPeers30Day(3, timezoneOffset),
     }
   }
 
-  async adminProductions(daysInterval: number = 3): Promise<AdminProductions> {
+  async adminProductions(daysInterval: number = 3, timezoneOffset: number): Promise<AdminProductions> {
     const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
-  and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+  and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1;`)
     const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
-  and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+  and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by date(time)
 order by 1;`)
 
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
-  and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+  and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 group by date_trunc('minute', time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -267,7 +273,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
-  and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+  and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by date(time)
 order by 1)
 select min(energy) as "minEnergy",
@@ -310,8 +316,8 @@ from t;`)
           price: value.price
         }
       }),
-      peers_today: await this.getAdminProductionPeersToday(),
-      peers_30_days: await this.getAdminProductionPeers30Day()
+      peers_today: await this.getAdminProductionPeersToday(timezoneOffset),
+      peers_30_days: await this.getAdminProductionPeers30Day(3, timezoneOffset)
     }
   }
 
@@ -347,7 +353,7 @@ from t;`)
     })
   }
 
-  async getConsumptionPeersForToday(cell: Cell): Promise<Array<{
+  async getConsumptionPeersForToday(cell: Cell, timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -355,13 +361,13 @@ from t;`)
     "price": number
   }>> {
     return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
-where ("fromId" = ${cell.id} or "toId"=${cell.id}) and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 group by c.name, c."ethAddress"
 order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
   }
 
-  async getConsumptionPeersFor30Day(cell: Cell, daysInterval: number = 3): Promise<Array<{
+  async getConsumptionPeersFor30Day(cell: Cell, daysInterval: number = 3, timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -369,20 +375,20 @@ order by c.name)
     "price": number
   }>> {
     return await this.transactionRepository.query(`with t1 as (select c.name as "total", sum(amount) as bought, sum(cost) as "price" from transaction join cell c on transaction."toId" = c.id
-where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+where ("fromId" = ${cell.id} or "toId"=${cell.id}) and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by c.name, c."ethAddress"
 order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
   }
 
-  async operatorConsumption(cellEthAddress: string): Promise<OperatorConsumption | {}> {
+  async operatorConsumption(cellEthAddress: string, timezoneOffset: number): Promise<OperatorConsumption | {}> {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
       }
     })
-    const peers_today = await this.getConsumptionPeersForToday(cell)
-    const peers_30_days = await this.getConsumptionPeersFor30Day(cell)
+    const peers_today = await this.getConsumptionPeersForToday(cell, timezoneOffset)
+    const peers_30_days = await this.getConsumptionPeersFor30Day(cell, 3, timezoneOffset)
 
     return {
       peers_today: peers_today.map(value => ({...value, bought: undefined})),
@@ -390,14 +396,14 @@ order by c.name)
     }
   }
 
-  async operatorProduction(cellEthAddress: string): Promise<OperatorProduction| {}> {
+  async operatorProduction(cellEthAddress: string, timezoneOffset: number): Promise<OperatorProduction| {}> {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
       }
     })
-    const peers_today = await this.getProductionPeersToday(cell)
-    const peers_30_days = await this.getProductionPeers30Day(cell)
+    const peers_today = await this.getProductionPeersToday(cell, timezoneOffset)
+    const peers_30_days = await this.getProductionPeers30Day(cell, 3, timezoneOffset)
 
     return {
       peers_today: peers_today.map(value => ({...value, bought: undefined})),
@@ -405,7 +411,7 @@ order by c.name)
     }
   }
 
-  async userConsumption(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3): Promise<UserConsumption | {}> {
+  async userConsumption(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3, timezoneOffset: number): Promise<UserConsumption | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -417,17 +423,17 @@ order by c.name)
 
     const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price from trade
 where "cellId" = ${userCell.id}
-and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 order by 1;`)
     const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price from trade
 where "cellId" = ${userCell.id}
-and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by date(time)
 order by 1;`)
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
            from trade
            where "cellId" = ${userCell.id}
-             and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+             and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
            order by 1)
 select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
        max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
@@ -436,7 +442,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
            from trade
            where "cellId" = ${userCell.id}
-             and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+             and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
            group by date(time)
            order by 1)
 select min(energy) as "minEnergy",
@@ -480,12 +486,12 @@ from t;`)
           price: value.price
         }
       }),
-      peers_today: (await this.getConsumptionPeersForToday(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
-      peers_30_days: (await this.getConsumptionPeersFor30Day(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
+      peers_today: (await this.getConsumptionPeersForToday(userCell, timezoneOffset)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
+      peers_30_days: (await this.getConsumptionPeersFor30Day(userCell, 3, timezoneOffset)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
     }
   }
 
-  async getProductionPeersToday(cell: Cell): Promise<Array<{
+  async getProductionPeersToday(cell: Cell, timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -497,14 +503,14 @@ from t;`)
                      join cell c on transaction."fromId" = c.id
             where ("fromId" = ${cell.id}
                or "toId" = ${cell.id})
-                and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
-                and time <= now()+'8 hour'::interval
+                and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
+                and time <= now()+'${timezoneOffset} hour'::interval
             group by c.name)
 select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
 from cell join t1 on total = cell.name;`)
   }
 
-  async getProductionPeers30Day(cell: Cell, daysInterval: number = 3): Promise<Array<{
+  async getProductionPeers30Day(cell: Cell, daysInterval: number = 3, timezoneOffset: number): Promise<Array<{
     "total": string,
     "id": string,
     "balance": number,
@@ -516,14 +522,14 @@ from cell join t1 on total = cell.name;`)
                      join cell c on transaction."fromId" = c.id
             where ("fromId" = ${cell.id}
                or "toId" = ${cell.id})
-                and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
-                and time <= now()+'8 hour'::interval
+                and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
+                and time <= now()+'${timezoneOffset} hour'::interval
             group by c.name)
 select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
 from cell join t1 on total = cell.name;`)
   }
 
-  async userProduction(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3): Promise<UserProduction | {}> {
+  async userProduction(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3, timezoneOffset: number): Promise<UserProduction | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -533,18 +539,18 @@ from cell join t1 on total = cell.name;`)
     const userTradeTable1Day: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, energy, price
 from trade
 where "cellId" = ${userCell.id}
-  and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+  and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 order by 1;`)
     const userTradeTable30Day: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
 from trade
 where "cellId" = ${userCell.id}
-  and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+  and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 group by date(time)
 order by 1;`)
     const minMaxAvg_today = await this.tradeRepository.query(`with t as (select date_trunc('minute', time) as time, energy, price
            from trade
            where "cellId" = ${userCell.id}
-             and date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+             and date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
            order by 1)
 select min(energy) as "minEnergy", max(energy) as "maxEnergy", avg(energy) as "averageEnergy",
        max(price) as "minPrice", max(price) as "maxPrice", avg(price) as "averagePrice"
@@ -553,7 +559,7 @@ from t;`)
     const minMaxAvg_30 = await this.tradeRepository.query(`with t as (select date(time) as time, sum(energy) as energy, avg(price) as price
            from trade
            where "cellId" = ${userCell.id}
-             and now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+             and now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
            group by date(time)
            order by 1)
 select min(energy) as "minEnergy",
@@ -596,12 +602,12 @@ from t;`)
           price: value.price
         }
       }),
-      peers_today: (await this.getProductionPeersToday(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
-      peers_30_days: (await this.getProductionPeers30Day(userCell)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
+      peers_today: (await this.getProductionPeersToday(userCell, timezoneOffset)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
+      peers_30_days: (await this.getProductionPeers30Day(userCell, 3, timezoneOffset)).map(value => Object.assign(value, { balance: balance ? value.balance : null })),
     }
   }
 
-  async userTransactions(cellEthAddress: string, daysInterval: number = 3): Promise<UserTransactions | {}> {
+  async userTransactions(cellEthAddress: string, daysInterval: number = 3, timezoneOffset: number): Promise<UserTransactions | {}> {
     const myCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -614,7 +620,7 @@ from t;`)
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where date_trunc('day', now()+'8 hour'::interval) - '8 hour'::interval <= time
+where date_trunc('day', now()+'${timezoneOffset} hour'::interval) - '${timezoneOffset} hour'::interval <= time
 and ("fromId"=${myCell.id} or "toId"=${myCell.id})
 order by time desc;`)
     const transactions_30_days = await this.transactionRepository.query(`select time as time,
@@ -624,7 +630,7 @@ order by time desc;`)
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where now()+'8 hour'::interval - '${daysInterval} day'::interval <= time
+where now()+'${timezoneOffset} hour'::interval - '${daysInterval} day'::interval <= time
 and ("fromId"=${myCell.id} or "toId"=${myCell.id})
 order by time desc;`)
 
@@ -683,5 +689,33 @@ order by time desc;`)
       initPower: data.prices.map(value => value.amount),
       initPrice: data.prices.map(value => value.price)
     })
+  }
+
+  validateIP(ip: string): boolean {
+    return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip);
+  }
+
+  async findTimezoneOffsetRelativeToIP(ip: string): Promise<number> {
+    if (!this.validateIP(ip))
+      throw new Error(`invalid IP address: ${ip}`)
+
+    if (!this.mapIPtoTimezoneOffset.has(ip)) {
+      const response = await axios.get(`https://timezoneapi.io/api/ip/?${ip}&token=aGxqtIzWlzZWmUGxlmzY`)
+      const data = response.data
+      if (data.meta.code == '200') {
+        // Log
+        console.log(data);
+        // Example: Get the users time
+        this.mapIPtoTimezoneOffset.set(ip , data.data.datetime.offset_hours);
+        return data.data.datetime.offset_hours;
+      } else {
+        throw new Error(`Failed to get timezone offset: ${response}`)
+      }
+    } else {
+      if (this.mapIPtoTimezoneOffset.get(ip) === undefined)
+        throw new Error(`Fatal error: ${ip} has value ${this.mapIPtoTimezoneOffset.get(ip)}`);
+      // @ts-ignore
+      return this.mapIPtoTimezoneOffset.get(ip);
+    }
   }
 }
