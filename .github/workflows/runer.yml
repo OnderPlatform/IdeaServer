@@ -51,7 +51,7 @@ jobs:
 
           # Login
           echo "--- Login to Registry ---"
-          docker login -u '${{ secrets.clientid }}' -p '${{ secrets.clientpw }}' $REGISTRY_URL
+          docker login -u '${{ secrets.clientid }}' -p '${{ secrets.clientpw }}' ${REGISTRY_URL}
 
           # # Push
           echo "--- Pushing images ---"
