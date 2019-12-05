@@ -41,16 +41,12 @@ jobs:
           REGISTRY_URL: generalregistry.azurecr.io
           IMAGE_COMMIT: ${{github.sha}}
         run: |
-          # Versioning
-          eval $(echo "export VERSION=$(cat lerna.json | grep version | sed -n 's/.* "\(.*\)".*/\1/p')")
-
           # Build
           echo "--- Building images ---"
           docker build -t reids/idea_server .
 
           # Tag
           echo "--- Tagging images ---"
-          docker tag reids/idea_server:latest ${REGISTRY_URL}/reids/idea_server:${VERSION}
           docker tag reids/idea_server:latest ${REGISTRY_URL}/reids/idea_server:${IMAGE_COMMIT}
 
           # Login
@@ -59,7 +55,6 @@ jobs:
 
           # # Push
           echo "--- Pushing images ---"
-          docker push ${REGISTRY_URL}/reids/idea_server:${VERSION}
           docker push ${REGISTRY_URL}/reids/idea_server:${IMAGE_COMMIT}
 
   update:
