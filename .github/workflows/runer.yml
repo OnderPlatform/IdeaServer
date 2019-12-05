@@ -1,0 +1,91 @@
+name: Test, Build and Deploy
+
+on: [push]
+
+jobs:
+  # test:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [10.x]
+  #   steps:
+      # - uses: actions/checkout@v1
+      # - name: Use Node.js ${{ matrix.node-version }}
+      #   uses: actions/setup-node@v1
+      #   with:
+      #     node-version: ${{ matrix.node-version }}
+      # - name: Clean yarn cache
+      #   run: yarn cache clean
+      # - name: Install dependencies
+      #   run: yarn install --pure-lockfile --ignore-optional && yarn lerna bootstrap
+      #   env:
+      #     CI: true
+      # - name: Compile
+      #   run: yarn build
+      #   env:
+      #     CI: true
+      # - name: Test
+      #   run: yarn test
+      #   env:
+      #     NO_GAS_REPORT: true
+      #     CI: true
+      # - name: Lint
+      #   run: yarn lint
+  build:
+    # needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build containers
+        env:
+          REGISTRY_URL: generalregistry.azurecr.io
+          IMAGE_COMMIT: ${{github.sha}}
+        run: |
+          # Versioning
+          eval $(echo "export VERSION=$(cat lerna.json | grep version | sed -n 's/.* "\(.*\)".*/\1/p')")
+
+          # Build
+          echo "--- Building images ---"
+          docker build -t reids/idea_server .
+
+          # Tag
+          echo "--- Tagging images ---"
+          docker tag reids/idea_server:latest ${REGISTRY_URL}/reids/idea_server:${VERSION}
+          docker tag reids/idea_server:latest ${REGISTRY_URL}/reids/idea_server:${IMAGE_COMMIT}
+
+          # Login
+          echo "--- Login to Registry ---"
+          docker login -u '${{ secrets.clientid }}' -p '${{ secrets.clientpw }}' $REGISTRY_URL
+
+          # # Push
+          echo "--- Pushing images ---"
+          docker push ${REGISTRY_URL}/reids/idea_server:${VERSION}
+          docker push ${REGISTRY_URL}/reids/idea_server:${IMAGE_COMMIT}
+
+  update:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      # with:
+        # who-to-greet: ${{ outputs._IMG_VERSION }}
+    - name: Update image in K8s 
+      env:
+        REGISTRY_URL: generalregistry.azurecr.io
+        KUBE_API: generalcluster-13054bf5.hcp.eastus2.azmk8s.io
+        IMAGE_COMMIT: ${{github.sha}}
+      run: |
+          # Mount keys
+          echo "--- Mount certs ---"
+          echo "${{ secrets.k8s_general_client_certificate }}" > /tmp/client_certificate.crt
+          echo "${{ secrets.k8s_general_client_key }}" > /tmp/client_key.crt
+          echo "${{ secrets.k8s_general_cluster_ca_certificate }}" > /tmp/cluster_ca_certificate.crt
+          # Set credentials
+          echo "--- Set credentials for cluster ---"
+          kubectl config set-credentials deployer --client-certificate=/tmp/client_certificate.crt --client-key=/tmp/client_key.crt --token=${{ secrets.k8s_general_client_token }}
+          kubectl config set-cluster general --server=https://$KUBE_API --certificate-authority=/tmp/cluster_ca_certificate.crt
+          kubectl config set-context general_cluster --cluster general --user deployer
+          kubectl config use-context general_cluster
+          # Undate images
+          echo "--- Update images in deployment ---"
+          # kubectl set image deployment/reidsbe reidsbe="$REGISTRY_URL/reids/idea_server:${IMAGE_COMMIT}" --namespace="reids"
