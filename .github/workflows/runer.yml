@@ -42,7 +42,7 @@ jobs:
           IMAGE_COMMIT: ${{github.sha}}
         run: |
           # Versioning
-          eval $(echo "export VERSION=$(cat lerna.json | grep version | sed -n 's/.* "\(.*\)".*/\1/p')")
+          # eval $(echo "export VERSION=$(cat lerna.json | grep version | sed -n 's/.* "\(.*\)".*/\1/p')")
 
           # Build
           echo "--- Building images ---"
@@ -51,7 +51,7 @@ jobs:
 
           # Tag
           echo "--- Tagging images ---"
-          docker tag reids/contracts:latest ${REGISTRY_URL}/reids/contracts:$VERSION
+          # docker tag reids/contracts:latest ${REGISTRY_URL}/reids/contracts:$VERSION
           docker tag reids/contracts:latest ${REGISTRY_URL}/reids/contracts:${IMAGE_COMMIT}
 
           # Login
@@ -60,7 +60,7 @@ jobs:
 
           # # Push
           echo "--- Pushing images ---"
-          docker push ${REGISTRY_URL}/reids/contracts:${VERSION}
+          # docker push ${REGISTRY_URL}/reids/contracts:${VERSION}
           docker push ${REGISTRY_URL}/reids/contracts:${IMAGE_COMMIT}
   update:
     needs: build
