@@ -60,7 +60,7 @@ export default class Application {
       this.postData()
     })
     cron.schedule('*/5 * * * * *', () => {
-      console.log('Sending progress to mqtt')
+      console.log('Sending progress to mqtt (autoupdated)')
       this.sendProgress()
     })
   }
