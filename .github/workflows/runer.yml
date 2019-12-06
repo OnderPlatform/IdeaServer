@@ -47,7 +47,6 @@ jobs:
 
           # Build
           echo "--- Building images ---"
-          cd contracts/
           docker build -t reids/contracts ./contracts/
 
           # Tag
