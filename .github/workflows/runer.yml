@@ -33,6 +33,7 @@ jobs:
       #   run: yarn lint
   build:
     # needs: test
+    if: github.ref == 'refs/heads/development'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -83,4 +84,4 @@ jobs:
           kubectl config use-context general_cluster
           # Undate images
           echo "--- Update images in deployment ---"
-          # kubectl set image deployment/reidsbe reidsbe="$REGISTRY_URL/reids/idea_server:${IMAGE_COMMIT}" --namespace="reids"
+          kubectl set image deployment/reidsbe reidsbe="$REGISTRY_URL/reids/idea_server:${IMAGE_COMMIT}" --namespace="reids"
