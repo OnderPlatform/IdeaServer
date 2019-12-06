@@ -32,6 +32,7 @@ jobs:
       # - name: Lint
       #   run: yarn lint
   build:
+    if: github.ref == 'refs/heads/master'
     # needs: test
     runs-on: ubuntu-latest
     steps:
@@ -47,7 +48,7 @@ jobs:
           # Build
           echo "--- Building images ---"
           cd contracts/
-          docker build -t reids/contracts .
+          docker build -t reids/contracts ./contracts/
 
           # Tag
           echo "--- Tagging images ---"
@@ -88,4 +89,4 @@ jobs:
           kubectl config use-context general_cluster
           # Undate images
           echo "--- Update images in deployment ---"
-          # kubectl set image deployment/contracts contracts="$REGISTRY_URL/reids/contracts:${IMAGE_COMMIT}" --namespace="reids"
+          kubectl set image deployment/contracts contracts="$REGISTRY_URL/reids/contracts:${IMAGE_COMMIT}" --namespace="reids"
