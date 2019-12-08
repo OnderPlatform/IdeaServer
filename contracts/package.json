@@ -40,7 +40,7 @@
     "tslint-config-standard": "^7.0.0"
   },
   "dependencies": {
-    "@machinomy/hdwallet-provider": "^1.1.0",
+    "@machinomy/hdwallet-provider": "1.7.1",
     "@machinomy/logger": "^0.2.5",
     "@machinomy/types-web3": "^0.0.4",
     "@types/fs-extra": "^5.0.4",
