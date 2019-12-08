@@ -487,6 +487,11 @@ export class BaseController {
             ctx.response.status = 200
             break
           }
+          case "operator": {
+            ctx.response.body = await this.db.service.reidsUI.operatorProduction(who)
+            ctx.response.status = 200
+            break
+          }
           default: {
             this.helpThrowCodeAndMessage(ctx, 400, "user\'s cell type and requested type of data doesn\'t match")
             break
