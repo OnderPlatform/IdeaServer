@@ -400,8 +400,8 @@ order by c.name)
     const peers_30_days = await this.getProductionPeers30Day(cell)
 
     return {
-      peers_today: peers_today.map(value => ({...value, bought: undefined})),
-      peers_30_days: peers_30_days.map(value => ({...value, bought: undefined})),
+      peers_today: peers_today.map(value => ({...value, bought: undefined, balance: undefined})),
+      peers_30_days: peers_30_days.map(value => ({...value, bought: undefined, balance: undefined})),
     }
   }
 

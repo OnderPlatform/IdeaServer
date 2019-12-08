@@ -329,13 +329,13 @@ export interface OperatorProduction {
   "peers_today": Array<{
     "total": string,
     "id": string,
-    "balance": number,
+    // "balance": number,
     "price": number
   }>
   "peers_30_days": Array<{
     "total": string,
     "id": string,
-    "balance": number,
+    // "balance": number,
     "price": number
   }>
 }
