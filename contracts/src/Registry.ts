@@ -37,7 +37,7 @@ export default class Registry {
     const network = this.options.network
     const infuraURL = new Infura(network, infuraToken).url()
     const mnemonic = this.options.mnemonic
-    return new HDWalletProvider({ mnemonic: mnemonic, rpcUrl: infuraURL })
+    return HDWalletProvider.mnemonic({ mnemonic: mnemonic, rpc: infuraURL })
   }
 
   @memoize
