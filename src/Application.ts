@@ -45,8 +45,8 @@ export default class Application {
     this.db.service.mqtt.mqtt_cl.add_handler((value: string, message: string) => this.db.service.mqtt.newTransactionStateFromMQTT(value, message))
     this.db.service.mqtt.mqtt_cl.start()
 
-    // console.log("post data cron")
-    // this.postData()
+    console.log("post data cron")
+    this.postData()
     // this.fetchingData()
 
     // await this.db.service.amigo.fetchAndHandleDataFromAMIGO()
@@ -60,7 +60,7 @@ export default class Application {
       this.postData()
     })
     cron.schedule('*/5 * * * * *', () => {
-      console.log('Sending progress to mqtt (autoupdated)')
+      console.log('Sending progress to mqtt')
       this.sendProgress()
     })
   }
