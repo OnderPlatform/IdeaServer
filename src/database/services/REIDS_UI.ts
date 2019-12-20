@@ -16,6 +16,7 @@ import {
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 import { Cell } from "../models";
 import { DAY_INTERVAL } from "../../webEndpoints/controllers/BaseController";
+import * as luxon from 'luxon';
 
 const DEFAULT_BALANCE = -1
 
@@ -30,8 +31,8 @@ export class REIDS_UI extends NodeDatabaseRepositories {
     super();
   }
 
-  async adminTransactions(daysInterval: number = 3, timezoneName: string): Promise<UserTransactions> {
-    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time as time,
+  async adminTransactions(daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<UserTransactions> {
+    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time + '${timezoneOffset} hour'::interval as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -41,7 +42,7 @@ from transaction join cell c on transaction."toId" = c.id join cell c2 on transa
 where date(now() at time zone '${timezoneName}') <= time at time zone '${timezoneName}'
 order by time desc;`)
 
-    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time as time,
+    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time + '${timezoneOffset} hour'::interval as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -144,8 +145,8 @@ from t1
     return now
   }
 
-  async adminConsumptions(daysInterval: number = 3, timezoneName: string): Promise<AdminConsumptions> {
-    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
+  async adminConsumptions(daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<AdminConsumptions> {
+    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) + '${timezoneOffset} hour'::interval as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
   and date(now() at time zone '${timezoneName}') <= time at time zone '${timezoneName}'
@@ -153,7 +154,7 @@ group by date_trunc('minute', time)
 order by 1;`)
 
 
-    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) at time zone '${timezoneName}' as time, sum(energy) as energy, avg(price) as price
+    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) + '${timezoneOffset} hour'::interval at time zone '${timezoneName}' as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
   and date(now() at time zone '${timezoneName}') - '${daysInterval} day'::interval <= time at time zone '${timezoneName}'
@@ -237,14 +238,14 @@ from t;`)
     }
   }
 
-  async adminProductions(daysInterval: number = 3, timezoneName: string): Promise<AdminProductions> {
-    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) as time, sum(energy) as energy, avg(price) as price
+  async adminProductions(daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<AdminProductions> {
+    const entitiesToday: GraphicEntry[] = await this.tradeRepository.query(`select date_trunc('minute', time) + '${timezoneOffset} hour'::interval as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'prosumer' or type = 'producer')
   and date(now() at time zone '${timezoneName}') <= time at time zone '${timezoneName}'
 group by date_trunc('minute', time)
 order by 1;`)
-    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
+    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) + '${timezoneOffset} hour'::interval as time, sum(energy) as energy, avg(price) as price
 from trade
 where (type = 'producer' or type = 'prosumer')
   and date(now() at time zone '${timezoneName}') - '${daysInterval} day'::interval <= time at time zone '${timezoneName}'
@@ -375,7 +376,7 @@ order by c.name)
     select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price from t1 join cell on t1.total = cell.name;`)
   }
 
-  async operatorProduction(cellEthAddress: string, timezoneName: string): Promise<OperatorProduction| {}> {
+  async operatorProduction(cellEthAddress: string, timezoneName: string, timezoneOffset: number): Promise<OperatorProduction| {}> {
     const cell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -390,7 +391,7 @@ order by c.name)
     }
   }
 
-  async userConsumption(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3, timezoneName: string): Promise<UserConsumption | {}> {
+  async userConsumption(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<UserConsumption | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -508,7 +509,7 @@ select t1.total, cell."ethAddress" as id, cell.balance, t1.sold, t1.price
 from cell join t1 on total = cell.name;`)
   }
 
-  async userProduction(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3, timezoneName: string): Promise<UserProduction | {}> {
+  async userProduction(cellEthAddress: string, balance: boolean = true, daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<UserProduction | {}> {
     const userCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
@@ -586,7 +587,7 @@ from t;`)
     }
   }
 
-  async userTransactions(cellEthAddress: string, daysInterval: number = 3, timezoneName: string): Promise<UserTransactions | {}> {
+  async userTransactions(cellEthAddress: string, daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<UserTransactions | {}> {
     const myCell = await this.cellRepository.findOneOrFail({
       where: {
         ethAddress: cellEthAddress
