@@ -10,6 +10,7 @@ import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
 import { UserMargin } from "../../mockData/interfaces";
 import * as luxon from 'luxon';
+import { DateTime } from "luxon";
 
 export const DAY_INTERVAL = 2;
 
@@ -99,7 +100,7 @@ export class BaseController {
       return
     }
     ctx.response.body = {
-      version: '1.18'
+      version: '1.19'
     }
     ctx.response.status = 200
   }
@@ -357,8 +358,7 @@ export class BaseController {
   }
 
   getTimezoneOffset(ctx: Router.IRouterContext): number {
-    const clientTimeStamp = Number(ctx.request.headers['localdate'])
-    return 0
+    return DateTime.local().setZone(this.getTimezoneName(ctx)).offset/60
   }
 
   getTimezoneName(ctx: Router.IRouterContext): string {
