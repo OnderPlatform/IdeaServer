@@ -11,3 +11,6 @@ node_modules/
 
 package-lock.json
 yarn.lock
+contracts/build/contracts/Migrations.json
+contracts/build/contracts/Notary.json
+contracts/src/wrappers/Notary.ts
