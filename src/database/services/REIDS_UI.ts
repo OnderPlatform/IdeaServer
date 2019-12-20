@@ -39,7 +39,6 @@ export class REIDS_UI extends NodeDatabaseRepositories {
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
 where date_trunc('day', now()+'${offsetInHours} hour'::interval) - '${offsetInHours} hour'::interval <= time
 order by time desc;`)
-    console.log(transactions_today);
 
     const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time as time,
        c2.name as "from",

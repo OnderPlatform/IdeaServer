@@ -10,7 +10,7 @@ import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
 import { UserMargin } from "../../mockData/interfaces";
 
-const DAY_INTERVAL = 2;
+const DAY_INTERVAL = 3;
 
 type UserInfo = {
   userId: number,
@@ -98,7 +98,7 @@ export class BaseController {
       return
     }
     ctx.response.body = {
-      version: '1.2'
+      version: '1.3'
     }
     ctx.response.status = 200
   }
