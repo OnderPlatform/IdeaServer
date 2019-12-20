@@ -11,7 +11,7 @@ import axios from 'axios'
 import { UserMargin } from "../../mockData/interfaces";
 import * as luxon from 'luxon';
 
-export const DAY_INTERVAL = 3;
+export const DAY_INTERVAL = 2;
 
 type UserInfo = {
   userId: number,
@@ -99,7 +99,7 @@ export class BaseController {
       return
     }
     ctx.response.body = {
-      version: '1.5'
+      version: '1.6'
     }
     ctx.response.status = 200
   }
