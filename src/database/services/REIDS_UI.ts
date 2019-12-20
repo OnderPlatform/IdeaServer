@@ -31,7 +31,7 @@ export class REIDS_UI extends NodeDatabaseRepositories {
   }
 
   async adminTransactions(daysInterval: number = 3, timezoneName: string): Promise<UserTransactions> {
-    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time at time zone '${timezoneName}' as time,
+    const transactions_today: Transaction[] = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
        price,
@@ -41,14 +41,14 @@ from transaction join cell c on transaction."toId" = c.id join cell c2 on transa
 where date(now() at time zone '${timezoneName}') <= time at time zone '${timezoneName}'
 order by time desc;`)
 
-    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time at time zone '${timezoneName}' as time,
+    const transactions_30_days: Transaction[] = await this.transactionRepository.query(`select time as time,
        c2.name as "from",
        c.name   as "to",
        price,
        amount   as "transfer_energy",
        cost     as "transfer_coin"
 from transaction join cell c on transaction."toId" = c.id join cell c2 on transaction."fromId" = c2.id
-where now() at time zone '${timezoneName}' - '${daysInterval} day'::interval <= time at time zone '${timezoneName}'
+where date(now() at time zone '${timezoneName}') - '${daysInterval} day'::interval <= time at time zone '${timezoneName}'
 order by time desc;`)
 
     return {
@@ -68,7 +68,7 @@ order by time desc;`)
     select c.name as "total", sum(amount) as bought, sum(cost) as "price"
     from transaction
              join cell c on transaction."fromId" = c.id
-      and time at time zone '${timezoneName}' < now() at time zone '${timezoneName}' and date(now() at time zone '${timezoneName}') <= time
+      and time at time zone '${timezoneName}' <= now() at time zone '${timezoneName}' and date(now() at time zone '${timezoneName}') <= time at time zone '${timezoneName}'
     group by c.name, c."ethAddress"
     order by c.name)
 select total, cell."ethAddress" as "id", cell.balance, t1.bought, t1.price
