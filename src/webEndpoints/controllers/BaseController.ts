@@ -99,7 +99,7 @@ export class BaseController {
       return
     }
     ctx.response.body = {
-      version: '1.14'
+      version: '1.15'
     }
     ctx.response.status = 200
   }
@@ -358,7 +358,7 @@ export class BaseController {
 
   getTimezoneOffset(ctx: Router.IRouterContext): number {
     const clientTimeStamp = Number(ctx.request.headers['localdate'])
-    return luxon.DateTime.fromJSDate(new Date(clientTimeStamp)).offset / 60
+    return luxon.DateTime.fromJSDate(new Date(clientTimeStamp)).toLocal().offset / 60
   }
 
   getTimezoneName(ctx: Router.IRouterContext): string {
