@@ -854,7 +854,7 @@ export class BaseController {
               lastChecked: null
             }
           // console.log('Checking this one:', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, currentUser)));
-          return await axios.post('http://localhost:9505/timestamp/check', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, currentUser)), {
+          return await axios.post('http://contracts-service:9505/timestamp/check', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, currentUser)), {
             headers: {
               'Content-Type': 'application/json',
             }
@@ -899,7 +899,7 @@ export class BaseController {
             time: "DESC"
           }
         })).lastCheckingDate
-        const response = await axios.post('http://localhost:9505/timestamp/check', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, user)), {
+        const response = await axios.post('http://contracts-service:9505/timestamp/check', JSON.parse(await this.setDateFromAnchoringTable(infoToCheck, user)), {
           headers: {
             'Content-Type': 'application/json',
           }
