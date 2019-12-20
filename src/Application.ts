@@ -45,7 +45,7 @@ export default class Application {
     this.db.service.mqtt.mqtt_cl.add_handler((value: string, message: string) => this.db.service.mqtt.newTransactionStateFromMQTT(value, message))
     this.db.service.mqtt.mqtt_cl.start()
 
-    console.log("post data cron")
+    console.log("post data cron on start")
     this.postData()
     // this.fetchingData()
 
