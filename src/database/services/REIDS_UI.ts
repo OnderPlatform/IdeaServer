@@ -131,8 +131,8 @@ from t1
          join cell on t1.total = cell.name;`)
   }
 
-  getTomorrowSingapore() {
-    return new Date(DateTime.local().plus({day: 1}).toISODate())
+  getTomorrowSingapore(zone: string) {
+    return new Date(DateTime.local().setZone(zone).plus({day: 1}).toISODate())
   }
 
   async adminConsumptions(daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<AdminConsumptions> {
@@ -187,7 +187,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), energy: 0}),
       energy_30_day: entities30Today.map(value => {
         if (typeof value.energy != "number")
           throw new Error('energy is null')
@@ -203,7 +203,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today[0].averagePrice}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), price: minMaxAvg_today[0].averagePrice}),
       price_30_day: entities30Today.map(value => {
         if (typeof value.price != "number")
           throw new Error('price is null')
@@ -282,7 +282,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), energy: 0}),
       energy_30_day: entities30Today.map(value => {
         return {
           date: value.time,
@@ -294,7 +294,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today[0].averagePrice}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), price: minMaxAvg_today[0].averagePrice}),
       price_30_day: entities30Today.map(value => {
         return {
           date: value.time,
@@ -437,7 +437,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), energy: 0}),
       energy_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -449,7 +449,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today[0].averagePrice}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), price: minMaxAvg_today[0].averagePrice}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -553,7 +553,7 @@ from t;`)
           date: value.time,
           energy: value.energy
         }
-      }).concat({date: this.getTomorrowSingapore(), energy: 0}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), energy: 0}),
       energy_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
@@ -565,7 +565,7 @@ from t;`)
           date: value.time,
           price: value.price
         }
-      }).concat({date: this.getTomorrowSingapore(), price: minMaxAvg_today[0].averagePrice}),
+      }).concat({date: this.getTomorrowSingapore(timezoneName), price: minMaxAvg_today[0].averagePrice}),
       price_30_day: userTradeTable30Day.map(value => {
         return {
           date: value.time,
