@@ -65,6 +65,7 @@ export class BaseController {
     router.get(`${namespace}/getCurrentUser`, this.getCurrentUser.bind(this))
     router.get(`${namespace}/getCellInfo`, this.getCellInfo.bind(this))
     router.get(`${namespace}/check`, this.getCheckUserNotarization.bind(this))
+    router.get(`${namespace}/version`, this.getCurrentVersion.bind(this))
 
     router.get(`${namespace}/hello`, (ctx: Router.IRouterContext) => {
       ctx.response.body = 'Hello!'
@@ -87,6 +88,17 @@ export class BaseController {
     });
 
     return router
+  }
+
+  async getCurrentVersion(ctx: Router.IRouterContext) {
+    check(ctx)
+    if (ctx.response.status == 401) {
+      return
+    }
+    ctx.response.body = {
+      version: '1'
+    }
+    ctx.response.status = 200
   }
 
   async getCurrentUser(ctx: Router.IRouterContext) {
@@ -368,6 +380,11 @@ export class BaseController {
     }
   }
 
+  getTimezoneOffset(ctx: Router.IRouterContext): number {
+    const clientTimeStamp = Number(ctx.request.headers['localDate'])
+    return new Date(clientTimeStamp).getTimezoneOffset() / 60
+  }
+
   async getUserConsumptions(ctx: Router.IRouterContext) {
     check(ctx)
     if (ctx.response.status == 401) {
@@ -381,6 +398,7 @@ export class BaseController {
       })
       const isAdmin = user.isAdmin
 
+
       if (isAdmin) {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
@@ -392,7 +410,7 @@ export class BaseController {
           })
           switch (cell.type) {
             case "consumer": {
-              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser)
+              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser, true, 3, this.getTimezoneOffset(ctx))
               ctx.response.status = 200
               break;
             }
@@ -404,7 +422,7 @@ export class BaseController {
             }
           }
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
+          ctx.response.body = await this.db.service.reidsUI.adminConsumptions(3, this.getTimezoneOffset(ctx))
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
@@ -415,7 +433,7 @@ export class BaseController {
         })
         switch (cell.type) {
           case "consumer": {
-            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false)
+            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false, 3, this.getTimezoneOffset(ctx))
             ctx.response.status = 200
             break;
           }
@@ -456,12 +474,12 @@ export class BaseController {
           switch (cell.type) {
             case "producer":
             case "prosumer": {
-              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser)
+              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser, true, 3, this.getTimezoneOffset(ctx))
               ctx.response.status = 200
               break
             }
             case "operator": {
-              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser)
+              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser, this.getTimezoneOffset(ctx))
               ctx.response.status = 200
               break
             }
@@ -471,7 +489,7 @@ export class BaseController {
             }
           }
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminProductions()
+          ctx.response.body = await this.db.service.reidsUI.adminProductions(3, this.getTimezoneOffset(ctx))
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
@@ -483,12 +501,12 @@ export class BaseController {
         switch (cell.type) {
           case "producer":
           case "prosumer": {
-            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false)
+            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false, 3, this.getTimezoneOffset(ctx))
             ctx.response.status = 200
             break
           }
           case "operator": {
-            ctx.response.body = await this.db.service.reidsUI.operatorProduction(who)
+            ctx.response.body = await this.db.service.reidsUI.operatorProduction(who, this.getTimezoneOffset(ctx))
             ctx.response.status = 200
             break
           }
@@ -521,12 +539,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser)
+          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser, 3, this.getTimezoneOffset(ctx))
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminTransactions()
+          ctx.response.body = await this.db.service.reidsUI.adminTransactions(3, this.getTimezoneOffset(ctx))
         }
       } else {
-        ctx.response.body = await this.db.service.reidsUI.userTransactions(who)
+        ctx.response.body = await this.db.service.reidsUI.userTransactions(who, 3, this.getTimezoneOffset(ctx))
       }
 
 
@@ -611,12 +629,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30, this.getTimezoneOffset(ctx)))
         } else {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30, this.getTimezoneOffset(ctx)))
         }
       } else {
-        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30))
+        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30, this.getTimezoneOffset(ctx)))
       }
       ctx.response.status = 200
       ctx.response.body = {
