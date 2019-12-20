@@ -381,7 +381,7 @@ export class BaseController {
   }
 
   getTimezoneOffset(ctx: Router.IRouterContext): number {
-    const clientTimeStamp = Number(ctx.request.headers['localDate'])
+    const clientTimeStamp = Number(ctx.request.headers['localdate'])
     return new Date(clientTimeStamp).getTimezoneOffset() / 60
   }
 
