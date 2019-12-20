@@ -358,7 +358,8 @@ export class BaseController {
   }
 
   getTimezoneOffset(ctx: Router.IRouterContext): number {
-    return DateTime.local().setZone(this.getTimezoneName(ctx)).offset/60
+    const clientTimeStamp = Number(ctx.request.headers['localdate'])
+    return -DateTime.fromJSDate(new Date(clientTimeStamp)).offset / 60;
   }
 
   getTimezoneName(ctx: Router.IRouterContext): string {
