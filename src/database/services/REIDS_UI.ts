@@ -3,7 +3,6 @@ import {
   AdminConsumptions,
   AdminProductions,
   Authorization,
-  OperatorConsumption,
   OperatorProduction,
   Transaction,
   UserAnchor,
@@ -16,7 +15,7 @@ import {
 import { NodeDatabaseRepositories } from "./NodeDatabaseRepositories";
 import { Cell } from "../models";
 import { DAY_INTERVAL } from "../../webEndpoints/controllers/BaseController";
-import * as luxon from 'luxon';
+import { DateTime } from 'luxon';
 
 const DEFAULT_BALANCE = -1
 
@@ -133,16 +132,7 @@ from t1
   }
 
   getTomorrowSingapore() {
-    let now = new Date()
-    now = new Date(now.toISOString())
-    now.setHours(now.getHours()+8)
-    now.setDate(now.getDate()+1)
-    now.setHours(0)
-    now.setMinutes(0)
-    now.setSeconds(0)
-    now.setMilliseconds(0)
-    now.setHours(now.getHours()-8)
-    return now
+    return new Date(DateTime.local().plus({day: 1}).toISODate())
   }
 
   async adminConsumptions(daysInterval: number = 3, timezoneName: string, timezoneOffset: number): Promise<AdminConsumptions> {
