@@ -9,8 +9,9 @@ import config from "../../config/config";
 import { mapEthAddressToURL } from "../endpoints/IDEAServers";
 import axios from 'axios'
 import { UserMargin } from "../../mockData/interfaces";
+import * as luxon from 'luxon';
 
-const DAY_INTERVAL = 3;
+export const DAY_INTERVAL = 3;
 
 type UserInfo = {
   userId: number,
@@ -98,7 +99,7 @@ export class BaseController {
       return
     }
     ctx.response.body = {
-      version: '1.4'
+      version: '1.5'
     }
     ctx.response.status = 200
   }
@@ -166,33 +167,6 @@ export class BaseController {
       throw e
     }
 
-  }
-
-  async getAdminTransactions(ctx: Router.IRouterContext) {
-    check(ctx)
-    if (ctx.response.status == 401) {
-      return
-    }
-    ctx.response.body = await this.db.service.reidsUI.adminTransactions()
-    ctx.response.status = 200
-  }
-
-  async getAdminConsumptions(ctx: Router.IRouterContext) {
-    check(ctx)
-    if (ctx.response.status == 401) {
-      return
-    }
-    ctx.response.body = await this.db.service.reidsUI.adminConsumptions()
-    ctx.response.status = 200
-  }
-
-  async getAdminProductions(ctx: Router.IRouterContext) {
-    check(ctx)
-    if (ctx.response.status == 401) {
-      return
-    }
-    ctx.response.body = await this.db.service.reidsUI.adminProductions()
-    ctx.response.status = 200
   }
 
   async closeUserChannels(userEmail: string): Promise<any> {
@@ -387,6 +361,11 @@ export class BaseController {
     return -(new Date(clientTimeStamp).getTimezoneOffset() / 60)
   }
 
+  getTimezoneName(ctx: Router.IRouterContext): string {
+    const clientTimeStamp = Number(ctx.request.headers['localdate'])
+    return luxon.DateTime.fromJSDate(new Date(clientTimeStamp)).zoneName
+  }
+
   async getUserConsumptions(ctx: Router.IRouterContext) {
     check(ctx)
     if (ctx.response.status == 401) {
@@ -412,7 +391,7 @@ export class BaseController {
           })
           switch (cell.type) {
             case "consumer": {
-              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser, true, DAY_INTERVAL, this.getTimezoneOffset(ctx))
+              ctx.response.body = await this.db.service.reidsUI.userConsumption(discoveringuser, true, DAY_INTERVAL, this.getTimezoneName(ctx))
               ctx.response.status = 200
               break;
             }
@@ -424,7 +403,7 @@ export class BaseController {
             }
           }
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminConsumptions(DAY_INTERVAL, this.getTimezoneOffset(ctx))
+          ctx.response.body = await this.db.service.reidsUI.adminConsumptions(DAY_INTERVAL, this.getTimezoneName(ctx))
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
@@ -435,7 +414,7 @@ export class BaseController {
         })
         switch (cell.type) {
           case "consumer": {
-            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false, DAY_INTERVAL, this.getTimezoneOffset(ctx))
+            ctx.response.body = await this.db.service.reidsUI.userConsumption(who, false, DAY_INTERVAL, this.getTimezoneName(ctx))
             ctx.response.status = 200
             break;
           }
@@ -476,12 +455,12 @@ export class BaseController {
           switch (cell.type) {
             case "producer":
             case "prosumer": {
-              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser, true, DAY_INTERVAL, this.getTimezoneOffset(ctx))
+              ctx.response.body = await this.db.service.reidsUI.userProduction(discoveringuser, true, DAY_INTERVAL, this.getTimezoneName(ctx))
               ctx.response.status = 200
               break
             }
             case "operator": {
-              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser, this.getTimezoneOffset(ctx))
+              ctx.response.body = await this.db.service.reidsUI.operatorProduction(discoveringuser, this.getTimezoneName(ctx))
               ctx.response.status = 200
               break
             }
@@ -491,7 +470,7 @@ export class BaseController {
             }
           }
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminProductions(DAY_INTERVAL, this.getTimezoneOffset(ctx))
+          ctx.response.body = await this.db.service.reidsUI.adminProductions(DAY_INTERVAL, this.getTimezoneName(ctx))
         }
       } else {
         const who = await this.findEthAddressByEmail(<string>ctx.request.headers['from'])
@@ -503,12 +482,12 @@ export class BaseController {
         switch (cell.type) {
           case "producer":
           case "prosumer": {
-            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false, DAY_INTERVAL, this.getTimezoneOffset(ctx))
+            ctx.response.body = await this.db.service.reidsUI.userProduction(who, false, DAY_INTERVAL, this.getTimezoneName(ctx))
             ctx.response.status = 200
             break
           }
           case "operator": {
-            ctx.response.body = await this.db.service.reidsUI.operatorProduction(who, this.getTimezoneOffset(ctx))
+            ctx.response.body = await this.db.service.reidsUI.operatorProduction(who, this.getTimezoneName(ctx))
             ctx.response.status = 200
             break
           }
@@ -541,12 +520,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser, DAY_INTERVAL, this.getTimezoneOffset(ctx))
+          ctx.response.body = await this.db.service.reidsUI.userTransactions(discoveringuser, DAY_INTERVAL, this.getTimezoneName(ctx))
         } else {
-          ctx.response.body = await this.db.service.reidsUI.adminTransactions(DAY_INTERVAL, this.getTimezoneOffset(ctx))
+          ctx.response.body = await this.db.service.reidsUI.adminTransactions(DAY_INTERVAL, this.getTimezoneName(ctx))
         }
       } else {
-        ctx.response.body = await this.db.service.reidsUI.userTransactions(who, DAY_INTERVAL, this.getTimezoneOffset(ctx))
+        ctx.response.body = await this.db.service.reidsUI.userTransactions(who, DAY_INTERVAL, this.getTimezoneName(ctx))
       }
 
 
@@ -631,12 +610,12 @@ export class BaseController {
         const params = new URLSearchParams(ctx.request.querystring)
         const discoveringuser = params.get('ethId')
         if (discoveringuser) {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30, this.getTimezoneOffset(ctx)))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(discoveringuser, 30, this.getTimezoneName(ctx)))
         } else {
-          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30, this.getTimezoneOffset(ctx)))
+          this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.adminTransactions(30, this.getTimezoneName(ctx)))
         }
       } else {
-        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30, this.getTimezoneOffset(ctx)))
+        this.excel.parseTransactionsToExcel(await this.db.service.reidsUI.userTransactions(who, 30, this.getTimezoneName(ctx)))
       }
       ctx.response.status = 200
       ctx.response.body = {
