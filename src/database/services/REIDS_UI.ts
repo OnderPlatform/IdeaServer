@@ -153,7 +153,7 @@ group by date_trunc('minute', time)
 order by 1;`)
 
 
-    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) as time, sum(energy) as energy, avg(price) as price
+    const entities30Today: GraphicEntry[] = await this.tradeRepository.query(`select date(time) at time zone '${timezoneName}' as time, sum(energy) as energy, avg(price) as price
 from trade
 where type = 'consumer'
   and date(now() at time zone '${timezoneName}') - '${daysInterval} day'::interval <= time at time zone '${timezoneName}'
