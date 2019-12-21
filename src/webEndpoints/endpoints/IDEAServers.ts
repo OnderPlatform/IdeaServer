@@ -13,7 +13,7 @@ export const IDEAServers = EthAddresses.map((value, index) => {
 
 export const IDEAURLs = IDEAServers.map(value => {
   return {
-    url: `https://${value.host}${value.port ? `:${value.port}` : ''}/${value.uri ? value.uri : ''}`
+    url: `http://${value.host}${value.port ? `:${value.port}` : ''}/${value.uri ? value.uri : ''}`
   }
 })
 
