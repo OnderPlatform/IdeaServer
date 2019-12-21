@@ -1,7 +1,7 @@
 import { EthAddresses } from "../../mockData/config";
 
 const commonHost = 'service'
-const commonPort = 4000
+const commonPort = 8881
 
 export const IDEAServers = EthAddresses.map((value, index) => {
   return {
