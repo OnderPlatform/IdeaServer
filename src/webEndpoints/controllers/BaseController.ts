@@ -99,7 +99,7 @@ export class BaseController {
       return
     }
     ctx.response.body = {
-      version: '1.28'
+      version: '1.29'
     }
     ctx.response.status = 200
   }
