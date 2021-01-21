@@ -21,7 +21,7 @@
     "pg": "^7.4.3",
     "pg-hstore": "^2.3.2",
     "lodash": "^4.17.11",
-    "socket.io": "^2.1.1",
+    "socket.io": "^2.4.0",
     "ts-node-dev": "^1.0.0-pre.30",
     "tslint": "^5.11.x",
     "tslint-config-standard": "^8.0.x",
