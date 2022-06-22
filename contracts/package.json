@@ -57,7 +57,7 @@
     "ethereumjs-units": "^0.2.0",
     "ethereumjs-util": "^5.2.0",
     "fs-extra": "^7.0.1",
-    "got": "^9.6.0",
+    "got": "^11.8.5",
     "koa": "^2.6.1",
     "koa-bodyparser": "^4.2.1",
     "koa-logger": "^3.2.0",
